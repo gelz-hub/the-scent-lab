@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Search,
   Heart,
@@ -14,26 +15,31 @@ import {
 import { useStore } from '@/lib/store'
 import { ThemeToggle } from './theme-toggle'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
 
 const NAV = [
-  { label: 'Shop', href: '#shop' },
-  { label: 'Women', href: '#women' },
-  { label: 'Men', href: '#men' },
-  { label: 'Unisex', href: '#unisex' },
-  { label: 'Brands', href: '#brands' },
-  { label: 'Collections', href: '#collections' },
-  { label: 'Journal', href: '#journal' },
-  { label: 'Sale', href: '#shop', accent: true },
+  { label: 'Shop', href: '/shop' },
+  { label: 'Women', href: '/women' },
+  { label: 'Men', href: '/men' },
+  { label: 'Unisex', href: '/unisex' },
+  { label: 'Brands', href: '/brands' },
+  { label: 'Collections', href: '/collections' },
+  { label: 'Journal', href: '/journal' },
+  { label: 'Sale', href: '/sale', accent: true },
 ]
 
 const MOBILE_EXTRA = [
-  { label: 'New Arrivals', href: '#new' },
-  { label: 'Best Sellers', href: '#bestsellers' },
-  { label: 'Gift Sets', href: '#collections' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'New Arrivals', href: '/new-arrivals' },
+  { label: 'Best Sellers', href: '/best-sellers' },
+  { label: 'About', href: '/about' },
+  { label: 'Contact', href: '/contact' },
+  { label: 'Account', href: '/account' },
+  { label: 'Admin', href: '/admin' },
 ]
+
+function isActive(pathname: string, href: string) {
+  if (href === '/shop') return pathname === '/shop'
+  return pathname === href || pathname.startsWith(href + '/')
+}
 
 export function Header() {
   const setSearchOpen = useStore((s) => s.setSearchOpen)
@@ -43,6 +49,7 @@ export function Header() {
   const setMobileNavOpen = useStore((s) => s.setMobileNavOpen)
   const cartCountValue = useStore((s) => s.cart.reduce((n, l) => n + l.qty, 0))
   const wishCount = useStore((s) => s.wishlist.length)
+  const pathname = usePathname()
 
   const [scrolled, setScrolled] = React.useState(false)
 
@@ -82,7 +89,7 @@ export function Header() {
           </button>
 
           {/* Logo */}
-          <Link href="#top" className="group flex items-center" aria-label="The Scent Lab home">
+          <Link href="/" className="group flex items-center" aria-label="The Scent Lab home">
             <span className="font-display text-[22px] font-medium leading-none tracking-tight">
               The Scent Lab
             </span>
@@ -91,16 +98,20 @@ export function Header() {
           {/* Desktop nav */}
           <nav className="ml-6 hidden items-center gap-1 md:flex">
             {NAV.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
                 className={cn(
                   'rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-surface',
-                  item.accent ? 'text-danger' : 'text-foreground/80 hover:text-foreground'
+                  item.accent
+                    ? 'text-danger'
+                    : isActive(pathname, item.href)
+                      ? 'text-foreground'
+                      : 'text-foreground/80 hover:text-foreground'
                 )}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -114,13 +125,13 @@ export function Header() {
               <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
             </button>
             <ThemeToggle />
-            <button
-              onClick={() => toast('Account', { description: 'Sign in coming soon' })}
+            <Link
+              href="/account"
               aria-label="Account"
               className="hidden h-9 w-9 place-items-center rounded-full text-foreground transition-colors hover:bg-surface sm:grid"
             >
               <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
-            </button>
+            </Link>
             <button
               onClick={() => setWishlistOpen(true)}
               aria-label="Wishlist"
@@ -158,7 +169,9 @@ export function Header() {
           />
           <div className="absolute left-0 top-0 flex h-full w-[82%] max-w-sm flex-col bg-background shadow-xl">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <span className="font-display text-xl">The Scent Lab</span>
+              <Link href="/" onClick={() => setMobileNavOpen(false)} className="font-display text-xl">
+                The Scent Lab
+              </Link>
               <button
                 onClick={() => setMobileNavOpen(false)}
                 aria-label="Close menu"
@@ -169,18 +182,19 @@ export function Header() {
             </div>
             <nav className="flex-1 overflow-y-auto px-2 py-4">
               {[...NAV, ...MOBILE_EXTRA].map((item, i) => (
-                <a
+                <Link
                   key={item.label + i}
                   href={item.href}
                   onClick={() => setMobileNavOpen(false)}
                   className={cn(
                     'flex items-center justify-between rounded-lg px-3 py-3 text-base font-medium transition-colors hover:bg-surface',
-                    item.accent && 'text-danger'
+                    item.accent && 'text-danger',
+                    isActive(pathname, item.href) && 'text-foreground'
                   )}
                 >
                   {item.label}
                   <ChevronRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                </a>
+                </Link>
               ))}
             </nav>
             <div className="border-t border-border px-5 py-4 text-xs text-muted-foreground">

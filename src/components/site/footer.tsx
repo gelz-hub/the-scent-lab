@@ -1,34 +1,58 @@
 'use client'
 
+import Link from 'next/link'
 import { Instagram, Twitter, Facebook, Youtube } from 'lucide-react'
 
 const COLUMNS = [
   {
     title: 'Shop',
-    links: ['Women', 'Men', 'Unisex', 'New Arrivals', 'Best Sellers', 'Gift Sets', 'Sale'],
+    links: [
+      { label: 'Women', href: '/women' },
+      { label: 'Men', href: '/men' },
+      { label: 'Unisex', href: '/unisex' },
+      { label: 'New Arrivals', href: '/new-arrivals' },
+      { label: 'Best Sellers', href: '/best-sellers' },
+      { label: 'Sale', href: '/sale' },
+    ],
   },
   {
     title: 'Discover',
-    links: ['All Brands', 'Collections', 'Journal', 'About Us', 'Sustainability', 'Careers'],
+    links: [
+      { label: 'All Brands', href: '/brands' },
+      { label: 'Collections', href: '/collections' },
+      { label: 'Journal', href: '/journal' },
+      { label: 'About Us', href: '/about' },
+      { label: 'Contact', href: '/contact' },
+    ],
   },
   {
     title: 'Help',
-    links: ['Contact', 'Shipping', 'Returns', 'Track Order', 'FAQ', 'Size Guide'],
+    links: [
+      { label: 'Shipping', href: '/shipping' },
+      { label: 'Returns', href: '/returns' },
+      { label: 'Track Order', href: '/account/orders' },
+      { label: 'FAQ', href: '/journal' },
+    ],
   },
   {
     title: 'Legal',
-    links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Accessibility'],
+    links: [
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
+    ],
   },
 ]
 
 export function Footer() {
   return (
-    <footer id="contact" className="mt-auto border-t border-border bg-background">
+    <footer className="mt-auto border-t border-border bg-background">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-6">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <p className="font-display text-2xl">The Scent Lab</p>
+            <Link href="/" className="font-display text-2xl">
+              The Scent Lab
+            </Link>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
               A curated marketplace of authentic fragrances from the world's finest
               houses. Curated Fragrances. Authentic Brands.
@@ -55,13 +79,13 @@ export function Footer() {
               </p>
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
+                  <li key={l.label}>
+                    <Link
+                      href={l.href}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {l}
-                    </a>
+                      {l.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

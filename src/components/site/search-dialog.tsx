@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,7 @@ const SUGGESTIONS = ['Woody', 'Floral', 'Fresh', 'Unisex', 'Le Labo', 'Under $15
 export function SearchDialog() {
   const open = useStore((s) => s.searchOpen)
   const setOpen = useStore((s) => s.setSearchOpen)
-  const setQuickView = useStore((s) => s.setQuickView)
+  const router = useRouter()
   const [q, setQ] = React.useState('')
 
   React.useEffect(() => {
@@ -60,12 +61,20 @@ export function SearchDialog() {
   const showEmpty =
     query.length > 0 && productResults.length === 0 && brandResults.length === 0
 
-  const openProduct = (id: string) => {
-    const p = products.find((x) => x.id === id)
-    if (p) {
-      setQuickView({ product: p, volumeIndex: 0 })
-      setOpen(false)
-    }
+  const goToProduct = (slug: string) => {
+    setOpen(false)
+    router.push(`/product/${slug}`)
+  }
+
+  const goToBrand = (slug: string) => {
+    setOpen(false)
+    router.push(`/brands/${slug}`)
+  }
+
+  const goToSearchPage = () => {
+    if (!query) return
+    setOpen(false)
+    router.push(`/search?q=${encodeURIComponent(query)}`)
   }
 
   return (
@@ -80,7 +89,13 @@ export function SearchDialog() {
         </DialogDescription>
 
         {/* Search input */}
-        <div className="flex items-center gap-3 border-b border-border px-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            goToSearchPage()
+          }}
+          className="flex items-center gap-3 border-b border-border px-4"
+        >
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
           <input
             autoFocus
@@ -91,6 +106,7 @@ export function SearchDialog() {
           />
           {q && (
             <button
+              type="button"
               onClick={() => setQ('')}
               aria-label="Clear search"
               className="text-muted-foreground hover:text-foreground"
@@ -98,7 +114,7 @@ export function SearchDialog() {
               <X className="h-4 w-4" />
             </button>
           )}
-        </div>
+        </form>
 
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {/* Suggestions when empty */}
@@ -130,7 +146,7 @@ export function SearchDialog() {
               {brandResults.map((b) => (
                 <button
                   key={b.slug}
-                  onClick={() => setQ(b.name)}
+                  onClick={() => goToBrand(b.slug)}
                   className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface"
                 >
                   <span className="text-sm">
@@ -154,7 +170,7 @@ export function SearchDialog() {
               {productResults.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => openProduct(p.id)}
+                  onClick={() => goToProduct(p.slug)}
                   className={cn(
                     'flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface'
                   )}
@@ -190,6 +206,19 @@ export function SearchDialog() {
               <p className="mt-1 text-sm text-muted-foreground">
                 Try a brand name, a note, or a fragrance family.
               </p>
+            </div>
+          )}
+
+          {/* View all on search page */}
+          {query && (productResults.length > 0 || brandResults.length > 0) && (
+            <div className="border-t border-border p-2">
+              <button
+                onClick={goToSearchPage}
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface"
+              >
+                Search all results for "{q}"
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+              </button>
             </div>
           )}
         </div>

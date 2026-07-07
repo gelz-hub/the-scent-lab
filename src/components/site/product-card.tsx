@@ -1,15 +1,16 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, Eye, Plus } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Product } from '@/lib/data'
-import { useStore } from '@/lib/store'
 import { formatPrice, discountPercent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { StarRating } from './star-rating'
-import { toast } from 'sonner'
+import { WishlistButton } from './wishlist-button'
+import { AddToCartButton } from './add-to-cart-button'
 
 interface ProductCardProps {
   product: Product
@@ -18,36 +19,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, index = 0, className }: ProductCardProps) {
-  const addToCart = useStore((s) => s.addToCart)
-  const toggleWishlist = useStore((s) => s.toggleWishlist)
-  const isWishlisted = useStore((s) => s.wishlist.includes(product.id))
-  const setQuickView = useStore((s) => s.setQuickView)
-
   const firstVolume = product.volumes[0]
   const discount = discountPercent(firstVolume.price, product.compareAtPrice)
   const onSale = product.tags.includes('Sale')
-
-  const handleWishlist = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    toggleWishlist(product.id)
-    toast.success(
-      isWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
-      { description: `${product.brand} ${product.name}` }
-    )
-  }
-
-  const handleQuickView = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setQuickView({ product, volumeIndex: 0 })
-  }
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    addToCart(product, firstVolume, 1)
-    toast.success('Added to cart', {
-      description: `${product.brand} ${product.name} · ${firstVolume.ml}ml`,
-    })
-  }
 
   return (
     <motion.article
@@ -62,10 +36,10 @@ export function ProductCard({ product, index = 0, className }: ProductCardProps)
     >
       {/* Image wrapper */}
       <div className="relative block aspect-square overflow-hidden rounded-t-xl bg-surface">
-        <button
-          onClick={handleQuickView}
+        <Link
+          href={`/product/${product.slug}`}
           className="absolute inset-0 h-full w-full"
-          aria-label={`Quick view ${product.name}`}
+          aria-label={`View ${product.brand} ${product.name}`}
         >
           <Image
             src={product.image}
@@ -94,42 +68,34 @@ export function ProductCard({ product, index = 0, className }: ProductCardProps)
             )}
           </div>
 
-          {/* Quick view */}
+          {/* View detail */}
           <div className="pointer-events-none absolute inset-x-3 bottom-3 translate-y-2 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
             <span className="pointer-events-none flex items-center justify-center gap-2 rounded-lg bg-background/95 py-2.5 text-xs font-medium tracking-wide backdrop-blur">
               <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
-              Quick View
+              View Product
             </span>
           </div>
-        </button>
+        </Link>
 
         {/* Wishlist (sibling, not nested) */}
-        <button
-          onClick={handleWishlist}
-          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-          className={cn(
-            'absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-background/90 backdrop-blur transition-all duration-200 hover:scale-105',
-            'opacity-0 group-hover:opacity-100 max-md:opacity-100'
-          )}
-        >
-          <Heart
-            className={cn(
-              'h-4 w-4 transition-colors',
-              isWishlisted ? 'fill-danger text-danger' : 'text-foreground'
-            )}
-            strokeWidth={1.5}
-          />
-        </button>
+        <WishlistButton
+          productId={product.id}
+          productName={`${product.brand} ${product.name}`}
+          className="absolute right-3 top-3 z-10"
+        />
       </div>
 
       {/* Info */}
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        <Link href={`/brands/${product.brandSlug}`} className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground">
           {product.brand}
-        </p>
-        <h3 className="mt-1 line-clamp-1 text-[15px] font-medium text-foreground">
+        </Link>
+        <Link
+          href={`/product/${product.slug}`}
+          className="mt-1 line-clamp-1 text-[15px] font-medium text-foreground transition-colors hover:text-brand"
+        >
           {product.name}
-        </h3>
+        </Link>
         <div className="mt-1 flex items-center gap-2">
           <StarRating rating={product.rating} size={12} showValue count={product.reviewCount} />
         </div>
@@ -153,13 +119,7 @@ export function ProductCard({ product, index = 0, className }: ProductCardProps)
         </div>
 
         {/* Add to cart */}
-        <button
-          onClick={handleAddToCart}
-          className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-foreground py-2.5 text-xs font-medium tracking-wide text-background transition-all duration-200 hover:bg-brand hover:text-brand-foreground active:scale-[0.98]"
-        >
-          <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-          Add to Cart
-        </button>
+        <AddToCartButton product={product} volume={firstVolume} />
       </div>
     </motion.article>
   )

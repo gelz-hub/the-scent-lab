@@ -14,11 +14,6 @@ export interface CartLine {
   qty: number
 }
 
-export interface QuickProduct {
-  product: Product
-  volumeIndex: number
-}
-
 interface StoreState {
   // Cart
   cart: CartLine[]
@@ -38,10 +33,7 @@ interface StoreState {
 
   // Recently viewed
   recentlyViewed: string[]
-
-  // Quick view
-  quickView: QuickProduct | null
-  setQuickView: (p: QuickProduct | null) => void
+  addRecentlyViewed: (productId: string) => void
 
   // Search
   searchOpen: boolean
@@ -125,21 +117,13 @@ export const useStore = create<StoreState>()(
       setWishlistOpen: (open) => set({ wishlistOpen: open }),
 
       recentlyViewed: [],
-
-      quickView: null,
-      setQuickView: (p) => {
-        if (p) {
-          set((s) => ({
-            quickView: p,
-            recentlyViewed: [
-              p.product.id,
-              ...s.recentlyViewed.filter((id) => id !== p.product.id),
-            ].slice(0, 8),
-          }))
-        } else {
-          set({ quickView: null })
-        }
-      },
+      addRecentlyViewed: (productId) =>
+        set((s) => ({
+          recentlyViewed: [
+            productId,
+            ...s.recentlyViewed.filter((id) => id !== productId),
+          ].slice(0, 8),
+        })),
 
       searchOpen: false,
       setSearchOpen: (open) => set({ searchOpen: open }),

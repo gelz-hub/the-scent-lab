@@ -54,11 +54,8 @@ export function CartSheet() {
 
   const handleCheckout = () => {
     if (cart.length === 0) return
-    toast.success('Order placed successfully', {
-      description: `Confirmation sent to your email · ${formatPrice(total)}`,
-    })
-    clearCart()
     setOpen(false)
+    window.location.href = '/checkout'
   }
 
   return (

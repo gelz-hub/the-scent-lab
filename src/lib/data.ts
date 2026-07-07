@@ -925,6 +925,12 @@ export const products: Product[] = [
   },
 ]
 
+export interface JournalArticle extends JournalPost {
+  slug: string
+  body: string[]
+  author: string
+}
+
 export const journal: JournalPost[] = [
   {
     id: "j1",
@@ -955,6 +961,111 @@ export const journal: JournalPost[] = [
     date: "Oct 22, 2024",
     readTime: "5 min read",
     image: "/images/journal-1.png",
+  },
+  {
+    id: "j4",
+    title: "How to Store Your Perfume",
+    excerpt:
+      "Light, heat and humidity are the enemies of fine fragrance. Here's how to make every bottle last.",
+    category: "Guide",
+    date: "Oct 08, 2024",
+    readTime: "4 min read",
+    image: "/images/journal-2.png",
+  },
+  {
+    id: "j5",
+    title: "The Art of Layering Fragrance",
+    excerpt:
+      "Why wear one scent when you can compose your own? A primer on combining fragrances with confidence.",
+    category: "Guide",
+    date: "Sep 24, 2024",
+    readTime: "7 min read",
+    image: "/images/journal-1.png",
+  },
+  {
+    id: "j6",
+    title: "A Brief History of Niche Perfumery",
+    excerpt:
+      "From Grasse to Brooklyn — how a handful of independent houses reshaped the way we think about scent.",
+    category: "Stories",
+    date: "Sep 10, 2024",
+    readTime: "9 min read",
+    image: "/images/journal-2.png",
+  },
+]
+
+export const journalArticles: JournalArticle[] = [
+  {
+    ...journal[0],
+    slug: "how-to-find-your-signature-scent",
+    author: "The Scent Lab Editors",
+    body: [
+      "Finding a signature scent is less about following trends and more about listening to yourself. The right fragrance should feel like an extension of your personality — something you reach for without thinking.",
+      "Start by identifying the families you're drawn to. Do you gravitate toward fresh citrus, warm amber, green florals or smoky woods? Visit a fragrance counter or order a discovery set and wear each scent for a full day.",
+      "Pay attention to how the fragrance evolves. Top notes fade within minutes; the heart and base are what you'll live with for hours. Skin chemistry matters enormously — a scent that sings on a friend may fall flat on you, and vice versa.",
+      "Build a small wardrobe rather than hunting for a single perfect perfume. A daytime fresh scent, an evening warm scent and a signature for special occasions will serve you better than one bottle you tire of.",
+      "Above all, trust your nose. There are no wrong answers in perfumery — only scents that feel like you, and scents that don't.",
+    ],
+  },
+  {
+    ...journal[1],
+    slug: "inside-the-perfumers-atelier",
+    author: "Léa Dubois",
+    body: [
+      "Behind every bottle of fine fragrance is a perfumer — a nose — who spent months or years composing the accord inside. We visited a working atelier to understand the craft.",
+      "The perfumer's organ, as the workspace is traditionally called, is a semicircle of hundreds of raw materials: natural absolutes, synthetics, tinctures and resins, each in its own labelled flask.",
+      "A composition begins with a brief. The house may ask for a fragrance that evokes a Mediterranean garden, or a modern reinterpretation of a classic chypre. The perfumer sketches the structure first — the base, then the heart, then the top.",
+      "Each trial is evaluated on blotting strips and on skin, then revisited days later as the dry-down reveals itself. A single fragrance may go through hundreds of modifications before it's deemed finished.",
+      "What emerges is part science, part art — a composition designed to unfold over hours, telling a story on the skin of whoever wears it.",
+    ],
+  },
+  {
+    ...journal[2],
+    slug: "understanding-fragrance-notes",
+    author: "The Scent Lab Editors",
+    body: [
+      "Every fragrance is built in three layers: top, heart and base. Understanding this pyramid is the key to appreciating how a scent develops on your skin.",
+      "Top notes are what you smell the moment you spray. They're typically light, volatile molecules — citrus, herbs, light fruits — that evaporate within the first 15 to 30 minutes.",
+      "Heart notes emerge as the tops fade, forming the character of the fragrance. Florals, spices and green notes commonly live here, and they define what most people will remember about the scent.",
+      "Base notes are the foundation — rich, heavy molecules like woods, musk, amber and vanilla that anchor the composition and linger for hours, sometimes days, on clothing.",
+      "This is why a fragrance smells different in the morning than it does at lunchtime, and why you should always test a scent on your skin and wait before deciding.",
+    ],
+  },
+  {
+    ...journal[3],
+    slug: "how-to-store-your-perfume",
+    author: "Marcus Hale",
+    body: [
+      "Fine fragrance is delicate. A bottle kept carelessly can turn in a matter of months, losing its brightness and taking on a sour, metallic edge.",
+      "The three enemies are light, heat and air. Ultraviolet light breaks down the aromatic molecules, which is why quality flacons are opaque or deeply tinted. Store your bottles in a closed cabinet or their original box.",
+      "Heat accelerates oxidation. Avoid windowsills, radiators and bathrooms, where steam and temperature swings are constant. A cool, dark drawer is ideal.",
+      "Once opened, a bottle begins a slow decline. Most fragrances stay true for three to five years; citrus and green scents turn fastest, while heavy ambers and woods age gracefully.",
+      "Decanting into smaller atomizers helps for bottles you use rarely, as it reduces the air inside the flacon. And never shake a bottle — the agitation introduces oxygen and speeds degradation.",
+    ],
+  },
+  {
+    ...journal[4],
+    slug: "art-of-layering-fragrance",
+    author: "Sofia Romano",
+    body: [
+      "Layering — wearing two or more fragrances at once — is an old perfumery tradition enjoying a modern revival. Done well, it produces a scent that is unmistakably yours.",
+      "Begin with a simple base. A clean musk, a light floral or a transparent wood makes an excellent canvas. Apply it first, generously, to pulse points.",
+      "Add a second fragrance that contrasts or complements. A bright citrus over a warm amber creates depth; a green tea over a white floral adds freshness without sweetness.",
+      "Keep the number of layers to two, occasionally three. More than that and the composition becomes muddy. Avoid combining two heavy, loud fragrances — let one lead and the other support.",
+      "The joy of layering is that no two combinations are alike. Experiment, take notes on what works, and over time you'll develop a personal scent vocabulary that no single bottle could provide.",
+    ],
+  },
+  {
+    ...journal[5],
+    slug: "brief-history-of-niche-perfumery",
+    author: "Léa Dubois",
+    body: [
+      "For most of the twentieth century, perfume was the domain of a handful of grand houses — Chanel, Dior, Guerlain — producing fragrances designed to appeal to millions.",
+      "The niche movement began quietly in the 1980s and 90s, when a new generation of perfumers rejected mass appeal in favor of singular, sometimes challenging compositions. Houses like L'Artisan Parfumeur and Serge Lutens led the way.",
+      "By the 2000s, brands like Le Labo, Byredo and Maison Francis Kurkdjian had turned niche into a global phenomenon, proving that discerning customers would pay a premium for distinctive, less ubiquitous scents.",
+      "What sets niche apart is not price or rarity alone, but intention. Niche houses make fragrances to express a point of view, not to fill a market gap. The result is a body of work that rewards exploration.",
+      "Today the line between niche and mainstream has blurred — many niche houses are now owned by larger groups — but the spirit of independent perfumery endures, and the shelves of The Scent Lab are richer for it.",
+    ],
   },
 ]
 
@@ -1008,3 +1119,197 @@ export const priceRange = () => {
 
 export const allCategories = ["Women", "Men", "Unisex"] as Gender[]
 export const allCollections = ["Luxury", "Niche", "Gift"] as CollectionTag[]
+
+// ---- Extended collections (for /collections page) ----
+export interface CollectionDetail {
+  slug: string
+  name: string
+  tagline: string
+  description: string
+  image: string
+  longDescription: string
+}
+
+export const collectionDetails: CollectionDetail[] = [
+  {
+    slug: "luxury",
+    name: "Luxury Collection",
+    tagline: "The world's most coveted flacons",
+    description:
+      "An edit of the rarest, most sought-after fragrances from the houses that define modern luxury.",
+    image: "/images/col-luxury.png",
+    longDescription:
+      "From the amber warmth of Tobacco Vanille to the radiant alchemy of Baccarat Rouge 540, the Luxury Collection gathers the fragrances that have come to define modern opulence. Each is a statement piece, crafted to be remembered.",
+  },
+  {
+    slug: "niche",
+    name: "Niche Collection",
+    tagline: "Artisan houses, singular visions",
+    description:
+      "Discover independent and artisan perfumers crafting distinctive scents far from the mainstream.",
+    image: "/images/col-niche.png",
+    longDescription:
+      "Niche perfumery is where the most original work in fragrance happens today. These are houses led by vision rather than committee — Le Labo, Byredo, Maison Francis Kurkdjian — producing compositions that reward close attention.",
+  },
+  {
+    slug: "fresh",
+    name: "Fresh",
+    tagline: "Citrus, aquatic and green",
+    description: "Crisp, clean and effortlessly wearable — the freshest scents in our edit.",
+    image: "/images/products/p-jomalone-woodsage.png",
+    longDescription:
+      "Fresh fragrances are built around citrus, aquatic and green notes — the olfactive equivalent of cool linen and open windows. They're ideal for warm weather, daytime wear and anyone who prefers their scent to whisper rather than shout.",
+  },
+  {
+    slug: "woody",
+    name: "Woody",
+    tagline: "Cedar, sandalwood and vetiver",
+    description: "Warm, grounded and sophisticated — woody scents for every season.",
+    image: "/images/products/p-lelabo-santal.png",
+    longDescription:
+      "Woody fragrances draw their character from cedar, sandalwood, vetiver and patchouli. They're the most versatile family in perfumery — equally at home in the office or on a winter evening — and they age beautifully on the skin.",
+  },
+  {
+    slug: "office",
+    name: "Office",
+    tagline: "Polished, quiet, appropriate",
+    description: "Considered scents that make an impression without overwhelming the room.",
+    image: "/images/products/p-hermes-terre.png",
+    longDescription:
+      "The Office edit gathers fragrances that read as polished and professional — moderate projection, clean structure, nothing cloying. They're the scents you reach for on a Monday morning, when you want to feel put-together without making a scene.",
+  },
+  {
+    slug: "summer",
+    name: "Summer",
+    tagline: "Light, bright, breezy",
+    description: "Sun-ready scents that shine in heat and humidity.",
+    image: "/images/products/p-marcjacobs-daisy.png",
+    longDescription:
+      "Summer fragrances are light, bright and refreshing — citrus, white florals and aquatic notes that perform beautifully in heat. They fade faster than heavy ambers, so reapplication is part of the pleasure.",
+  },
+  {
+    slug: "winter",
+    name: "Winter",
+    tagline: "Warm, rich, enveloping",
+    description: "Deep ambers, woods and gourmands for the coldest months.",
+    image: "/images/products/p-tomford-tobacco.png",
+    longDescription:
+      "Winter fragrances lean into warmth — tobacco, vanilla, amber and spice that bloom in cold air. They're the scents of fireplaces and cashmere, designed to wrap around you when the temperature drops.",
+  },
+  {
+    slug: "date-night",
+    name: "Date Night",
+    tagline: "Magnetic, memorable, a little daring",
+    description: "Fragrances designed to turn heads and linger in memory.",
+    image: "/images/products/p-ysl-blackopium.png",
+    longDescription:
+      "Date Night scents are bold without being overpowering — warm, sensual and just unpredictable enough to invite a second look. Think coffee, vanilla, dark florals and the kind of sillage that leaves a trace when you leave the room.",
+  },
+  {
+    slug: "gift",
+    name: "Gift Sets",
+    tagline: "Considered gifts, beautifully wrapped",
+    description: "Curated sets and ready-to-gift fragrances for every occasion.",
+    image: "/images/col-gift.png",
+    longDescription:
+      "Whether you're shopping for a fragrance lover or a first-timer, the Gift Collection gathers our most giftable scents — universally flattering, beautifully presented and always appreciated. Complimentary wrapping on every order.",
+  },
+  {
+    slug: "travel",
+    name: "Travel Size",
+    tagline: "Signature scents, to go",
+    description: "Compact 10–30ml flacons for your bag, your desk and your next trip.",
+    image: "/images/products/p-mfk-baccarat.png",
+    longDescription:
+      "Travel sizes let you carry your signature wherever you go — and they're the perfect low-commitment way to test a new scent. Every fragrance in our edit is available in a smaller format; this collection gathers our favorites.",
+  },
+]
+
+export const collectionBySlug = (slug: string) =>
+  collectionDetails.find((c) => c.slug === slug)
+
+// Map a collection slug to a product filter
+export function productsForCollection(slug: string): Product[] {
+  const c = collectionBySlug(slug)
+  if (!c) return []
+  switch (slug) {
+    case "luxury":
+      return products.filter((p) => p.collection.includes("Luxury"))
+    case "niche":
+      return products.filter((p) => p.collection.includes("Niche"))
+    case "gift":
+      return products.filter((p) => p.collection.includes("Gift"))
+    case "fresh":
+      return products.filter((p) =>
+        p.notes.top.some((n) => /bergamot|citrus|lemon|grapefruit|sea|mint|orange/i.test(n))
+      )
+    case "woody":
+      return products.filter((p) =>
+        [...p.notes.base, ...p.notes.heart].some((n) =>
+          /sandalwood|cedar|vetiver|patchouli|wood|papyrus/i.test(n)
+        )
+      )
+    case "office":
+      return products.filter(
+        (p) => p.projection <= 4 && p.occasions.includes("Office")
+      )
+    case "summer":
+      return products.filter((p) => p.seasons.includes("Summer"))
+    case "winter":
+      return products.filter((p) => p.seasons.includes("Winter"))
+    case "date-night":
+      return products.filter((p) => p.occasions.includes("Date Night"))
+    case "travel":
+      return products.filter((p) => p.volumes.some((v) => v.ml <= 50))
+    default:
+      return []
+  }
+}
+
+// ---- FAQs for product pages ----
+export const productFAQs = [
+  {
+    q: "Is this fragrance authentic?",
+    a: "Yes. Every fragrance we sell is sourced directly from the brand or an authorized distributor and is 100% authentic, sealed in its original packaging.",
+  },
+  {
+    q: "How long will a bottle last?",
+    a: "A 50ml bottle used daily (2–3 sprays) typically lasts 6–9 months. A 100ml bottle lasts about a year. Store it cool and dark to preserve its character.",
+  },
+  {
+    q: "What size should I buy?",
+    a: "If you're trying a fragrance for the first time, we recommend the smallest available size. For a confirmed favorite, the largest size offers the best value per millilitre.",
+  },
+  {
+    q: "Can I return an opened bottle?",
+    a: "Unopened bottles can be returned within 30 days for a full refund. Due to the nature of fragrance, opened bottles are non-returnable unless faulty.",
+  },
+  {
+    q: "Do you offer samples?",
+    a: "Yes — every order includes complimentary samples so you can discover something new. Discovery sets are also available for select houses.",
+  },
+]
+
+// ---- Related products ----
+export function relatedProducts(product: Product, limit = 4): Product[] {
+  return products
+    .filter(
+      (p) =>
+        p.id !== product.id &&
+        (p.brandSlug === product.brandSlug ||
+          p.gender === product.gender ||
+          p.collection.some((c) => product.collection.includes(c)) ||
+          p.notes.base.some((n) => product.notes.base.includes(n)))
+    )
+    .slice(0, limit)
+}
+
+// ---- Journal helpers ----
+export const articleBySlug = (slug: string) =>
+  journalArticles.find((a) => a.slug === slug)
+
+// ---- Breadcrumb type ----
+export interface Crumb {
+  label: string
+  href?: string
+}

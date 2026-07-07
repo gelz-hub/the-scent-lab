@@ -1,12 +1,13 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight, Sparkles } from 'lucide-react'
 
 export function HeroSection() {
   return (
-    <section id="top" className="relative overflow-hidden border-b border-border">
+    <section className="relative overflow-hidden border-b border-border">
       <div className="mx-auto grid max-w-7xl items-center gap-0 px-4 sm:px-6 lg:grid-cols-2">
         {/* Copy */}
         <div className="order-2 py-14 lg:order-1 lg:py-24 lg:pr-12">
@@ -45,19 +46,19 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.18 }}
             className="mt-8 flex flex-wrap items-center gap-3"
           >
-            <a
-              href="#shop"
+            <Link
+              href="/shop"
               className="group inline-flex items-center gap-2 rounded-lg bg-foreground px-6 py-3.5 text-sm font-medium text-background transition-colors hover:bg-brand hover:text-brand-foreground"
             >
               Shop the edit
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={1.5} />
-            </a>
-            <a
-              href="#collections"
+            </Link>
+            <Link
+              href="/collections"
               className="inline-flex items-center gap-2 rounded-lg border border-border px-6 py-3.5 text-sm font-medium transition-colors hover:border-foreground/40"
             >
               Explore collections
-            </a>
+            </Link>
           </motion.div>
 
           {/* Stats */}
