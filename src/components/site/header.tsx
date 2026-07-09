@@ -17,7 +17,7 @@ import { ThemeToggle } from './theme-toggle'
 import { NotificationBell } from './notification-bell'
 import { cn } from '@/lib/utils'
 
-const NAV = [
+const NAV: { label: string; href: string; accent?: boolean }[] = [
   { label: 'Shop', href: '/shop' },
   { label: 'Women', href: '/women' },
   { label: 'Men', href: '/men' },
@@ -28,7 +28,7 @@ const NAV = [
   { label: 'Sale', href: '/sale', accent: true },
 ]
 
-const MOBILE_EXTRA = [
+const MOBILE_EXTRA: { label: string; href: string; accent?: boolean }[] = [
   { label: 'New Arrivals', href: '/new-arrivals' },
   { label: 'Best Sellers', href: '/best-sellers' },
   { label: 'About', href: '/about' },

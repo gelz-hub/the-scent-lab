@@ -63,7 +63,7 @@ interface StatCardProps {
   label: string
   value: string
   trend: number
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
 }
 
 function StatCard({ label, value, trend, icon: Icon }: StatCardProps) {

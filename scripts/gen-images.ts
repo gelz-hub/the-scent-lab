@@ -13,7 +13,7 @@ function log(...a: any[]) {
 }
 
 process.on('uncaughtException', (e) => log('UNCAUGHT', e?.stack || e))
-process.on('unhandledRejection', (e) => log('UNHANDLED', e?.stack || e))
+process.on('unhandledRejection', (e) => log('UNHANDLED', (e as { stack?: string })?.stack || e))
 process.on('SIGTERM', () => log('SIGTERM'))
 process.on('SIGINT', () => log('SIGINT'))
 

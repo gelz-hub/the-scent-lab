@@ -21,7 +21,7 @@ interface AccountNotification {
   createdAt: string
 }
 
-const TYPE_ICON: Record<AccountNotification['type'], React.ComponentType<{ className?: string }>> = {
+const TYPE_ICON: Record<AccountNotification['type'], React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   PAYMENT_CONFIRMED: CreditCard,
   INVOICE_GENERATED: FileText,
   ORDER_PREPARING: Package,

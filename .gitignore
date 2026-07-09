@@ -52,3 +52,22 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Local database
+prisma/dev.db
+
+# Environment
+.env
+.env.local
+.env.production
+.env.development
+
+# Firebase service account
+firebase-service-account*.json
+service-account*.json
+
+# Uploads
+uploads/
+
+# OS
+Thumbs.db

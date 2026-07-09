@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { products } from '../src/lib/data'
 
@@ -55,13 +55,13 @@ async function main() {
         collection: p.collection,
         image: p.image,
         gallery: p.gallery,
-        volumes: p.volumes,
+        volumes: p.volumes as unknown as Prisma.InputJsonValue,
         compareAtPrice: p.compareAtPrice ?? null,
         rating: p.rating,
         reviewCount: p.reviewCount,
         description: p.description,
         story: p.story,
-        notes: p.notes,
+        notes: p.notes as unknown as Prisma.InputJsonValue,
         longevity: p.longevity,
         projection: p.projection,
         sillage: p.sillage,

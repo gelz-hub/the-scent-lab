@@ -73,8 +73,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     notifyBackInStock(product).catch((err) => console.error('notifyBackInStock failed', err))
   }
 
-  const oldPrice = (before.volumes as VolumeOption[])[0]?.price
-  const newPrice = (product.volumes as VolumeOption[])[0]?.price
+  const oldPrice = (before.volumes as unknown as VolumeOption[])[0]?.price
+  const newPrice = (product.volumes as unknown as VolumeOption[])[0]?.price
   if (typeof oldPrice === 'number' && typeof newPrice === 'number' && newPrice < oldPrice) {
     notifyPriceDrop(product, oldPrice, newPrice).catch((err) => console.error('notifyPriceDrop failed', err))
   }

@@ -42,7 +42,7 @@ function initialsFor(name: string) {
 interface NavItem {
   label: string
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
   /** Frontend visibility only — the server enforces the real permission on every page/API this links to. Omit for items every admin-area role should see (dashboard, analytics). */
   module?: Module
 }

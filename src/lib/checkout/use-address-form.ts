@@ -2,12 +2,12 @@
 
 import { useForm, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { addressSchema, type AddressFormValues } from './schema'
+import { addressSchema, type AddressFormInput, type AddressFormValues } from './schema'
 
-export type AddressForm = UseFormReturn<AddressFormValues>
+export type AddressForm = UseFormReturn<AddressFormInput, unknown, AddressFormValues>
 
 export function useAddressForm(defaultValues?: Partial<AddressFormValues>): AddressForm {
-  return useForm<AddressFormValues>({
+  return useForm<AddressFormInput, unknown, AddressFormValues>({
     resolver: zodResolver(addressSchema),
     mode: 'onBlur',
     defaultValues: {

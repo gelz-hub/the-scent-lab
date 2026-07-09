@@ -39,7 +39,7 @@ export interface Product {
   brand: string
   brandSlug: string
   gender: Gender
-  category: "Perfume" | "Eau de Parfum" | "Eau de Toilette" | "Gift Set"
+  category: "Perfume" | "Eau de Parfum" | "Eau de Toilette" | "Gift Set" | "Cologne"
   collection: CollectionTag[]
   image: string
   gallery: string[]

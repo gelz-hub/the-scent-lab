@@ -40,7 +40,8 @@ export const addressSchema = z
     }
   })
 
-export type AddressFormValues = z.infer<typeof addressSchema>
+export type AddressFormValues = z.output<typeof addressSchema>
+export type AddressFormInput = z.input<typeof addressSchema>
 
 export const paymentMethodSchema = z.enum([
   'ABA_KHQR',

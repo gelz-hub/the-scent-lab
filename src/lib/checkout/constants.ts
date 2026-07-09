@@ -4,7 +4,9 @@
 // Administrative divisions (provinces/districts) live as data, not code —
 // see src/data/cambodia/*.json and src/lib/maps/constants/provinces.ts.
 
-export { CAMBODIA_PROVINCES, districtsFor, type Province } from '@/lib/maps/constants/provinces'
+export { CAMBODIA_PROVINCES, districtsFor } from '@/lib/maps/constants/provinces'
+import type { Province } from '@/lib/maps/constants/provinces'
+export type { Province }
 
 /** Provinces served by local courier (same-day). Everything else falls back to LOGISTICS. */
 export const LOCAL_COURIER_PROVINCES: Province[] = ['Phnom Penh']
