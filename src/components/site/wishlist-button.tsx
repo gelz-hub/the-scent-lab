@@ -1,6 +1,7 @@
 'use client'
 
 import { Heart } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -20,6 +21,7 @@ export function WishlistButton({
 }: WishlistButtonProps) {
   const wishlisted = useStore((s) => s.wishlist.includes(productId))
   const toggle = useStore((s) => s.toggleWishlist)
+  const { data: session } = useSession()
 
   const handle = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -28,6 +30,14 @@ export function WishlistButton({
     toast.success(wishlisted ? 'Removed from wishlist' : 'Added to wishlist', {
       description: productName,
     })
+
+    if (session) {
+      fetch('/api/wishlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      }).catch(() => {})
+    }
   }
 
   if (variant === 'pill') {

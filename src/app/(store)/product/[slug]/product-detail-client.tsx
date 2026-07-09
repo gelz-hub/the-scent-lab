@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Minus, Plus, ShoppingBag, Heart, Check, Truck, ShieldCheck } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { formatPrice, discountPercent } from '@/lib/format'
+import { formatPrice, formatKHR, discountPercent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { Product } from '@/lib/data'
@@ -77,6 +77,7 @@ function Actions({ product }: { product: Product }) {
           </span>
         )}
       </div>
+      <p className="mt-1 text-sm text-muted-foreground">{formatKHR(volume.price)}</p>
 
       {/* Volume selector */}
       <div className="mt-6">
@@ -143,7 +144,7 @@ function Actions({ product }: { product: Product }) {
       {/* Trust badges */}
       <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <Truck className="h-3.5 w-3.5 text-brand" strokeWidth={1.5} /> Free shipping over $100
+          <Truck className="h-3.5 w-3.5 text-brand" strokeWidth={1.5} /> Free PP delivery over $100
         </div>
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5 text-brand" strokeWidth={1.5} /> 100% authentic

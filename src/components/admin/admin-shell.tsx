@@ -2,7 +2,8 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import {
   LayoutDashboard,
   Package,
@@ -10,28 +11,56 @@ import {
   Users,
   Boxes,
   BarChart3,
+  Bell,
+  Truck,
+  CreditCard,
+  Tags,
   Settings,
+  ShieldCheck,
+  ScrollText,
   ArrowLeft,
+  LogOut,
   Menu,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/site/theme-toggle'
+import { hasPermission, type Module } from '@/lib/rbac/permissions'
+import { GlobalSearchBar } from './global-search-bar'
+
+function initialsFor(name: string) {
+  return (
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || 'A'
+  )
+}
 
 interface NavItem {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
+  /** Frontend visibility only — the server enforces the real permission on every page/API this links to. Omit for items every admin-area role should see (dashboard, analytics). */
+  module?: Module
 }
 
 const NAV: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Products', href: '/admin/products', icon: Package },
-  { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-  { label: 'Customers', href: '/admin/users', icon: Users },
-  { label: 'Inventory', href: '/admin/inventory', icon: Boxes },
-  { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { label: 'Settings', href: '#', icon: Settings },
+  { label: 'Products', href: '/admin/products', icon: Package, module: 'products' },
+  { label: 'Orders', href: '/admin/orders', icon: ShoppingCart, module: 'orders' },
+  { label: 'Shipments', href: '/admin/shipments', icon: Truck, module: 'shipments' },
+  { label: 'Payments', href: '/admin/payments', icon: CreditCard, module: 'payments' },
+  { label: 'Customers', href: '/admin/customers', icon: Users, module: 'customers' },
+  { label: 'Inventory', href: '/admin/inventory', icon: Boxes, module: 'inventory' },
+  { label: 'Catalog', href: '/admin/catalog', icon: Tags, module: 'catalog' },
+  { label: 'Analytics', href: '/admin/analytics', icon: BarChart3, module: 'analytics' },
+  { label: 'Notifications', href: '/admin/notifications', icon: Bell, module: 'notifications' },
+  { label: 'Staff', href: '/admin/staff', icon: ShieldCheck, module: 'staff' },
+  { label: 'Audit Log', href: '/admin/audit-log', icon: ScrollText, module: 'auditLog' },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, module: 'settings' },
 ]
 
 function isActive(pathname: string, href: string): boolean {
@@ -42,12 +71,21 @@ function isActive(pathname: string, href: string): boolean {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const role = session?.user?.role
+
+  // Frontend-only filtering — hides links the signed-in role can't use, per
+  // spec ("frontend visibility alone is not sufficient" cuts the other way
+  // too: every one of these hrefs is independently enforced server-side by
+  // requirePermission, so hiding a link here is purely a UX nicety, never
+  // the actual gate.
+  const visibleNav = NAV.filter((item) => !item.module || !role || hasPermission(role, item.module, 'read'))
+
   return (
     <nav className="flex flex-col gap-1 px-3" aria-label="Admin navigation">
-      {NAV.map((item) => {
+      {visibleNav.map((item) => {
         const active = isActive(pathname, item.href)
         const Icon = item.icon
-        const isSettings = item.href === '#'
         return (
           <Link
             key={item.label}
@@ -63,11 +101,6 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           >
             <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
             <span>{item.label}</span>
-            {isSettings && (
-              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/60">
-                Soon
-              </span>
-            )}
           </Link>
         )
       })}
@@ -108,6 +141,17 @@ function BackToStore({ onNavigate }: { onNavigate?: () => void }) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = React.useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const { data: session } = useSession()
+
+  const displayName = session?.user?.name || session?.user?.email || 'Admin'
+  const role = session?.user?.role
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
+    router.push('/login')
+    router.refresh()
+  }
 
   // Close mobile drawer on route change
   React.useEffect(() => {
@@ -189,15 +233,30 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Desktop top bar */}
-        <div className="hidden h-14 items-center justify-between border-b border-border bg-background/85 px-8 backdrop-blur md:flex">
-          <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Admin Console
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="hidden h-14 items-center justify-between gap-6 border-b border-border bg-background/85 px-8 backdrop-blur md:flex">
+          <GlobalSearchBar />
+          <div className="flex items-center gap-3">
             <ThemeToggle />
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-              AD
+            <div className="flex items-center gap-2">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
+                {initialsFor(displayName)}
+              </div>
+              <div className="min-w-0 max-w-[140px]">
+                <p className="truncate text-sm font-medium leading-none">{displayName}</p>
+                {role && (
+                  <p className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {role.toLowerCase()}
+                  </p>
+                )}
+              </div>
             </div>
+            <button
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={1.5} />
+            </button>
           </div>
         </div>
 

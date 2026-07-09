@@ -32,6 +32,7 @@ import {
   type OrderStatus,
 } from '@/lib/admin-data'
 import { cn } from '@/lib/utils'
+import { ExportCsvLink } from '@/components/admin/export-csv-link'
 
 const STATUS_CLASSES: Record<OrderStatus, string> = {
   Delivered: 'bg-success/10 text-success',
@@ -100,6 +101,7 @@ export function OrdersClient() {
                   <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+              <ExportCsvLink href="/api/admin/orders/export" />
             </div>
           </div>
         </CardHeader>

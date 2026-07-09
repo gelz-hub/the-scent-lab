@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { ThemeToggle } from './theme-toggle'
+import { NotificationBell } from './notification-bell'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -22,7 +23,7 @@ const NAV = [
   { label: 'Men', href: '/men' },
   { label: 'Unisex', href: '/unisex' },
   { label: 'Brands', href: '/brands' },
-  { label: 'Collections', href: '/collections' },
+  { label: 'Discover', href: '/collections' },
   { label: 'Journal', href: '/journal' },
   { label: 'Sale', href: '/sale', accent: true },
 ]
@@ -66,7 +67,7 @@ export function Header() {
       <div className="bg-foreground text-background">
         <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-2 px-4 text-[11px] tracking-wide">
           <span className="hidden sm:inline">✦</span>
-          <span>Complimentary shipping over $100 · 100% authentic fragrances · Free returns</span>
+          <span>Free Phnom Penh delivery over US$100 · Province delivery via VET Express &amp; J&amp;T Express · 100% authentic</span>
         </div>
       </div>
 
@@ -89,9 +90,14 @@ export function Header() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="group flex items-center" aria-label="The Scent Lab home">
-            <span className="font-display text-[22px] font-medium leading-none tracking-tight">
+          <Link href="/" className="group flex shrink-0 items-center" aria-label="The Scent Lab home">
+            <span className="hidden whitespace-nowrap font-display font-medium leading-none tracking-tight md:inline md:text-[20px] lg:text-[22px]">
               The Scent Lab
+            </span>
+            <span className="font-display font-medium leading-[1.05] tracking-tight text-[15px] md:hidden">
+              The Scent
+              <br />
+              Lab
             </span>
           </Link>
 
@@ -125,6 +131,7 @@ export function Header() {
               <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
             </button>
             <ThemeToggle />
+            <NotificationBell />
             <Link
               href="/account"
               aria-label="Account"

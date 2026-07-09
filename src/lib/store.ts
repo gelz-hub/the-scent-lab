@@ -19,17 +19,23 @@ interface StoreState {
   cart: CartLine[]
   cartOpen: boolean
   addToCart: (product: Product, volume: VolumeOption, qty?: number) => void
+  /** Same merge behavior as addToCart, for callers (Buy Again) that already have a CartLine-shaped payload instead of a full Product. */
+  addCartLine: (line: Omit<CartLine, 'qty'>, qty?: number) => void
   removeFromCart: (productId: string, ml: number) => void
   updateQty: (productId: string, ml: number, qty: number) => void
   clearCart: () => void
   setCartOpen: (open: boolean) => void
 
-  // Wishlist
+  // Wishlist — persisted to localStorage for guests, synced to the DB via
+  // /api/wishlist (best-effort, fire-and-forget) whenever a session exists.
+  // See src/lib/account/wishlist-service.ts.
   wishlist: string[] // product ids
   wishlistOpen: boolean
   toggleWishlist: (productId: string) => void
   isWishlisted: (productId: string) => boolean
   setWishlistOpen: (open: boolean) => void
+  /** Replaces the wishlist wholesale — used to hydrate from the DB on login (see WishlistSync). */
+  hydrateWishlist: (productIds: string[]) => void
 
   // Recently viewed
   recentlyViewed: string[]
@@ -46,6 +52,7 @@ interface StoreState {
   // Promo
   promo: { code: string; discount: number } | null
   applyPromo: (code: string) => boolean
+  removePromo: () => void
 }
 
 const PROMO_CODES: Record<string, number> = {
@@ -86,6 +93,17 @@ export const useStore = create<StoreState>()(
           }
         })
       },
+      addCartLine: (line, qty = 1) => {
+        set((s) => {
+          const idx = s.cart.findIndex((l) => l.productId === line.productId && l.volume.ml === line.volume.ml)
+          if (idx >= 0) {
+            const cart = [...s.cart]
+            cart[idx] = { ...cart[idx], qty: cart[idx].qty + qty }
+            return { cart, cartOpen: true }
+          }
+          return { cart: [...s.cart, { ...line, qty }], cartOpen: true }
+        })
+      },
       removeFromCart: (productId, ml) =>
         set((s) => ({
           cart: s.cart.filter(
@@ -107,14 +125,24 @@ export const useStore = create<StoreState>()(
 
       wishlist: [],
       wishlistOpen: false,
-      toggleWishlist: (productId) =>
+      toggleWishlist: (productId) => {
         set((s) => ({
           wishlist: s.wishlist.includes(productId)
             ? s.wishlist.filter((id) => id !== productId)
             : [...s.wishlist, productId],
-        })),
+        }))
+        // Best-effort DB sync — a guest (no session) gets a 401 and the
+        // local/localStorage state above is still the source of truth for
+        // them, exactly as before this sync was added.
+        fetch('/api/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId }),
+        }).catch(() => {})
+      },
       isWishlisted: (productId) => get().wishlist.includes(productId),
       setWishlistOpen: (open) => set({ wishlistOpen: open }),
+      hydrateWishlist: (productIds) => set({ wishlist: productIds }),
 
       recentlyViewed: [],
       addRecentlyViewed: (productId) =>
@@ -140,6 +168,7 @@ export const useStore = create<StoreState>()(
         }
         return false
       },
+      removePromo: () => set({ promo: null }),
     }),
     {
       name: 'scentlab-store',

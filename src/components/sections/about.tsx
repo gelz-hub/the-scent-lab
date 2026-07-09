@@ -12,8 +12,8 @@ const VALUES = [
   },
   {
     icon: Truck,
-    title: 'Fast, free shipping',
-    body: 'Complimentary worldwide shipping on orders over $100, delivered in 2–4 days.',
+    title: 'Fast Cambodia delivery',
+    body: 'Free Phnom Penh delivery over US$100. Province delivery via VET Express & J&T Express.',
   },
   {
     icon: RefreshCcw,

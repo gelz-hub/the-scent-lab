@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Search, Plus, Pencil, Trash2, Package } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Package, Loader2 } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -20,8 +20,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { products } from '@/lib/admin-data'
-import { formatCurrency } from '@/lib/admin-data'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { formatCurrency, type AdminProduct } from '@/lib/admin-products'
+import { ProductFormDialog } from '@/components/admin/product-form-dialog'
+import { ExportCsvLink } from '@/components/admin/export-csv-link'
 import { cn } from '@/lib/utils'
 
 type StockStatus = 'In Stock' | 'Low Stock' | 'Out of Stock'
@@ -39,7 +50,30 @@ const STATUS_CLASSES: Record<StockStatus, string> = {
 }
 
 export function ProductsClient() {
+  const [products, setProducts] = React.useState<AdminProduct[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [query, setQuery] = React.useState('')
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [editing, setEditing] = React.useState<AdminProduct | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<AdminProduct | null>(null)
+  const [deleting, setDeleting] = React.useState(false)
+
+  const loadProducts = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/products')
+      const data = await res.json()
+      setProducts(data.products ?? [])
+    } catch {
+      toast.error('Could not load products')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    loadProducts()
+  }, [loadProducts])
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -50,7 +84,31 @@ export function ProductsClient() {
         p.brand.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q)
     )
-  }, [query])
+  }, [products, query])
+
+  function handleSaved(product: AdminProduct) {
+    setProducts((prev) => {
+      const exists = prev.some((p) => p.id === product.id)
+      return exists ? prev.map((p) => (p.id === product.id ? product : p)) : [product, ...prev]
+    })
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/products/${deleteTarget.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        toast.error('Could not delete product')
+        return
+      }
+      setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+      toast.success('Product deleted')
+      setDeleteTarget(null)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -63,7 +121,10 @@ export function ProductsClient() {
           </p>
         </div>
         <Button
-          onClick={() => toast('Add product', { description: 'Product editor coming soon.' })}
+          onClick={() => {
+            setEditing(null)
+            setDialogOpen(true)
+          }}
           className="bg-foreground text-background hover:bg-brand hover:text-brand-foreground"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
@@ -77,15 +138,18 @@ export function ProductsClient() {
             <CardTitle className="font-display text-lg font-medium tracking-tight">
               All products
             </CardTitle>
-            <div className="relative w-full sm:w-72">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name, brand or category..."
-                className="pl-9"
-                aria-label="Search products"
-              />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative w-full sm:w-72">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by name, brand or category..."
+                  className="pl-9"
+                  aria-label="Search products"
+                />
+              </div>
+              <ExportCsvLink href="/api/admin/products/export" />
             </div>
           </div>
         </CardHeader>
@@ -103,12 +167,23 @@ export function ProductsClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin" strokeWidth={1.5} />
+                      <div className="text-sm">Loading products…</div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <Package className="h-8 w-8" strokeWidth={1.25} />
-                      <div className="text-sm">No products match &quot;{query}&quot;</div>
+                      <div className="text-sm">
+                        {query ? `No products match "${query}"` : 'No products yet — add your first one.'}
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -165,7 +240,10 @@ export function ProductsClient() {
                             variant="ghost"
                             size="icon"
                             aria-label={`Edit ${p.name}`}
-                            onClick={() => toast('Edit product', { description: p.name })}
+                            onClick={() => {
+                              setEditing(p)
+                              setDialogOpen(true)
+                            }}
                           >
                             <Pencil className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
@@ -173,7 +251,7 @@ export function ProductsClient() {
                             variant="ghost"
                             size="icon"
                             aria-label={`Delete ${p.name}`}
-                            onClick={() => toast('Delete product', { description: `${p.name} would be moved to trash.` })}
+                            onClick={() => setDeleteTarget(p)}
                           >
                             <Trash2 className="h-4 w-4 text-danger" strokeWidth={1.5} />
                           </Button>
@@ -187,6 +265,34 @@ export function ProductsClient() {
           </Table>
         </CardContent>
       </Card>
+
+      <ProductFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        product={editing}
+        onSaved={handleSaved}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget ? `"${deleteTarget.name}" will be permanently removed from the catalog. This can't be undone.` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-danger text-danger-foreground hover:bg-danger/90"
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -9,7 +9,7 @@ import { SectionHeading } from '@/components/site/section-heading'
 
 export function CollectionSection() {
   return (
-    <section className="border-b border-border bg-surface/40 py-16 sm:py-20">
+    <section className="section-divider-soft bg-surface/30 py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <SectionHeading
           eyebrow="Curated edits"
@@ -19,38 +19,48 @@ export function CollectionSection() {
           className="mb-10"
         />
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-3">
           {collections.map((c, i) => (
             <motion.div
               key={c.slug}
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.55, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                duration: 0.6,
+                delay: i * 0.12,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
               <Link
                 href={`/collections/${c.slug}`}
-                className="group relative block aspect-[3/4] overflow-hidden rounded-xl border border-border"
+                className="group relative block aspect-[3/4] overflow-hidden rounded-2xl border border-border shadow-sm transition-shadow duration-300 hover:shadow-xl"
               >
                 <Image
                   src={c.image}
                   alt={c.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  className="object-cover transition-transform duration-700 ease-out-expo group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                {/* Deeper, richer gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-6 text-white">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/70">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/70">
                     {c.tagline}
                   </p>
-                  <h3 className="mt-1 font-display text-2xl font-medium">{c.name}</h3>
+                  <h3 className="mt-1 font-display text-2xl font-medium sm:text-3xl">
+                    {c.name}
+                  </h3>
                   <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/80">
                     {c.description}
                   </p>
-                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium">
+                  <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-white">
                     Discover
-                    <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={1.5} />
+                    <ArrowUpRight
+                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      strokeWidth={1.5}
+                    />
                   </span>
                 </div>
               </Link>

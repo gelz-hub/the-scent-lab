@@ -2,33 +2,53 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 
 export default function LoginPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <LoginForm />
+    </React.Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [showPwd, setShowPwd] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
       toast.error('Please fill in both fields')
       return
     }
     setLoading(true)
-    // Mock auth — simulate latency for nicer UX
-    setTimeout(() => {
-      setLoading(false)
-      toast.success('Signed in', {
-        description: 'Welcome back to The Scent Lab.',
-      })
-      router.push('/account')
-    }, 600)
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    })
+    setLoading(false)
+
+    if (!result || result.error) {
+      toast.error('Invalid email or password')
+      return
+    }
+
+    toast.success('Signed in', {
+      description: 'Welcome back to The Scent Lab.',
+    })
+    const callbackUrl = searchParams.get('callbackUrl')
+    router.push(callbackUrl || '/account')
+    router.refresh()
   }
 
   const handleGoogle = () => {

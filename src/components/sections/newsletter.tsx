@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { motion } from 'framer-motion'
-import { Mail, Check } from 'lucide-react'
+import { Mail, Check, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function NewsletterSection() {
@@ -24,39 +24,49 @@ export function NewsletterSection() {
   }
 
   return (
-    <section className="border-b border-border bg-surface/50 py-16 sm:py-20">
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+    <section className="relative overflow-hidden bg-surface/40 py-20 sm:py-28">
+      {/* Subtle brand-tint background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-brand/[0.03] to-transparent pointer-events-none" />
+
+      <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6">
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-foreground text-background">
-            <Mail className="h-5 w-5" strokeWidth={1.5} />
-          </span>
-          <h2 className="mt-5 font-display text-3xl font-medium tracking-tight sm:text-4xl">
+          {/* Icon cluster */}
+          <div className="mx-auto flex items-center justify-center gap-3">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-foreground text-background shadow-sm">
+              <Mail className="h-5 w-5" strokeWidth={1.5} />
+            </span>
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand/10 text-brand">
+              <Sparkles className="h-5 w-5" strokeWidth={1.5} />
+            </span>
+          </div>
+
+          <h2 className="mt-6 font-display text-3xl font-medium tracking-tight sm:text-4xl md:text-5xl">
             Join the list
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-muted-foreground">
             Be first to discover new arrivals, exclusive edits and members-only
             offers. Enjoy 10% off your first order.
           </p>
 
           <form
             onSubmit={submit}
-            className="mx-auto mt-7 flex max-w-md flex-col gap-2 sm:flex-row"
+            className="mx-auto mt-8 flex max-w-md flex-col gap-2.5 sm:flex-row"
           >
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
-              className="h-12 flex-1 rounded-lg border border-border bg-background px-4 text-sm outline-none transition-colors focus:border-foreground"
+              className="h-13 flex-1 rounded-xl border border-border bg-background px-5 text-sm shadow-sm outline-none transition-all duration-200 focus:border-brand focus:ring-2 focus:ring-brand/20"
             />
             <button
               type="submit"
-              className="flex h-12 items-center justify-center gap-2 rounded-lg bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-brand hover:text-brand-foreground"
+              className="flex h-13 items-center justify-center gap-2 rounded-xl bg-foreground px-7 text-sm font-medium text-background shadow-sm transition-all duration-300 hover:bg-brand hover:text-brand-foreground hover:shadow-md hover:shadow-brand/20"
             >
               {done ? (
                 <>

@@ -3,11 +3,13 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import {
   LayoutDashboard,
   Package,
   Heart,
   MapPin,
+  Bell,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -16,11 +18,21 @@ import { Breadcrumb } from '@/components/site/breadcrumb'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
+function initialsFor(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'U'
+}
+
 const NAV = [
   { label: 'Overview', href: '/account', icon: LayoutDashboard },
   { label: 'Orders', href: '/account/orders', icon: Package },
   { label: 'Wishlist', href: '/account/wishlist', icon: Heart },
   { label: 'Addresses', href: '/account/addresses', icon: MapPin },
+  { label: 'Notifications', href: '/account/notifications', icon: Bell },
   { label: 'Settings', href: '/account/settings', icon: Settings },
 ] as const
 
@@ -31,15 +43,21 @@ export default function AccountLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { data: session } = useSession()
+
+  const displayName = session?.user?.name || 'Guest User'
+  const displayEmail = session?.user?.email || ''
 
   const isActive = (href: string) =>
     href === '/account' ? pathname === '/account' : pathname.startsWith(href)
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
     toast.success('Signed out', {
       description: 'You have been signed out of your account.',
     })
-    setTimeout(() => router.push('/login'), 400)
+    router.push('/login')
+    router.refresh()
   }
 
   return (
@@ -51,7 +69,7 @@ export default function AccountLayout({
           My account
         </p>
         <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
-          Guest User
+          {displayName}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Manage your orders, wishlist, addresses and preferences.
@@ -92,13 +110,13 @@ export default function AccountLayout({
               <div className="flex items-center gap-3">
                 <Avatar className="size-10">
                   <AvatarFallback className="bg-brand text-brand-foreground text-sm font-medium">
-                    GU
+                    {initialsFor(displayName)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">Guest User</p>
+                  <p className="truncate text-sm font-medium">{displayName}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    guest@thescentlab.com
+                    {displayEmail}
                   </p>
                 </div>
               </div>

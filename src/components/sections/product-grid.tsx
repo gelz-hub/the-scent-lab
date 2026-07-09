@@ -31,7 +31,10 @@ export function ProductGridSection({
   if (limit) list = list.slice(0, limit)
 
   return (
-    <section id={id} className={`border-b border-border py-16 sm:py-20 ${className ?? ''}`}>
+    <section
+      id={id}
+      className={`section-divider-soft py-20 sm:py-28 ${className ?? ''}`}
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <SectionHeading
           eyebrow={eyebrow}
@@ -44,8 +47,8 @@ export function ProductGridSection({
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4"
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4"
         >
           {list.map((p, i) => (
             <ProductCard key={p.id} product={p} index={i} />

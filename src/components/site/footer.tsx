@@ -1,7 +1,9 @@
 'use client'
 
+import * as React from 'react'
 import Link from 'next/link'
-import { Instagram, Twitter, Facebook, Youtube } from 'lucide-react'
+import { Instagram, Twitter, Facebook, Youtube, Check } from 'lucide-react'
+import { toast } from 'sonner'
 
 const COLUMNS = [
   {
@@ -18,7 +20,8 @@ const COLUMNS = [
   {
     title: 'Discover',
     links: [
-      { label: 'All Brands', href: '/brands' },
+      { label: 'Brands', href: '/brands' },
+      { label: 'Gift Sets', href: '/collections/gift' },
       { label: 'Collections', href: '/collections' },
       { label: 'Journal', href: '/journal' },
       { label: 'About Us', href: '/about' },
@@ -28,9 +31,9 @@ const COLUMNS = [
   {
     title: 'Help',
     links: [
+      { label: 'Track Order', href: '/account/orders' },
       { label: 'Shipping', href: '/shipping' },
       { label: 'Returns', href: '/returns' },
-      { label: 'Track Order', href: '/account/orders' },
       { label: 'FAQ', href: '/journal' },
     ],
   },
@@ -42,6 +45,43 @@ const COLUMNS = [
     ],
   },
 ]
+
+function FooterNewsletter() {
+  const [email, setEmail] = React.useState('')
+  const [done, setDone] = React.useState(false)
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim() || !email.includes('@')) {
+      toast.error('Please enter a valid email')
+      return
+    }
+    setDone(true)
+    toast.success('Subscribed', { description: 'Check your inbox for 10% off.' })
+    setEmail('')
+    setTimeout(() => setDone(false), 3000)
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-5 flex max-w-xs gap-2">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Your email"
+        aria-label="Email address"
+        className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-foreground"
+      />
+      <button
+        type="submit"
+        aria-label="Subscribe to newsletter"
+        className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-brand hover:text-brand-foreground"
+      >
+        {done ? <Check className="h-4 w-4" strokeWidth={2} /> : 'Join'}
+      </button>
+    </form>
+  )
+}
 
 export function Footer() {
   return (
@@ -57,6 +97,7 @@ export function Footer() {
               A curated marketplace of authentic fragrances from the world's finest
               houses. Curated Fragrances. Authentic Brands.
             </p>
+            <FooterNewsletter />
             <div className="mt-5 flex gap-2">
               {[Instagram, Twitter, Facebook, Youtube].map((Icon, i) => (
                 <a

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingBag, Tag, Check, ArrowRight, X } from 'lucide-react'
 import { useStore, cartSubtotal } from '@/lib/store'
-import { formatPrice } from '@/lib/format'
+import { formatPrice, formatKHR } from '@/lib/format'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 import { EmptyState } from '@/components/site/empty-state'
 import { toast } from 'sonner'
@@ -117,8 +117,13 @@ export default function CartPage() {
                         <Plus className="h-3 w-3" />
                       </button>
                     </div>
-                    <span className="text-sm font-semibold">
-                      {formatPrice(line.volume.price * line.qty)}
+                    <span className="text-right">
+                      <span className="block text-sm font-semibold">
+                        {formatPrice(line.volume.price * line.qty)}
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground">
+                        {formatKHR(line.volume.price * line.qty)}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -176,7 +181,10 @@ export default function CartPage() {
               <div className="my-2 border-t border-border" />
               <div className="flex items-center justify-between">
                 <span className="font-medium">Total</span>
-                <span className="font-display text-2xl font-semibold">{formatPrice(total)}</span>
+                <span className="text-right">
+                  <span className="block font-display text-2xl font-semibold">{formatPrice(total)}</span>
+                  <span className="block text-xs text-muted-foreground">{formatKHR(total)}</span>
+                </span>
               </div>
             </div>
 

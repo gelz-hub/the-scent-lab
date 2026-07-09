@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "country": "Cambodia",
+  "source": "Community-compiled from Cambodia's 25 provinces/capital (post-2018 reorganization, incl. Tboung Khmum). Cross-checked against @svg-maps/cambodia. Not an official government dataset — see src/lib/maps/README.md for replacement instructions.",
+  "lastUpdated": "2026-07-08",
+  "data": [
+    { "code": "PP", "name": "Phnom Penh" },
+    { "code": "BMC", "name": "Banteay Meanchey" },
+    { "code": "BTB", "name": "Battambang" },
+    { "code": "KPC", "name": "Kampong Cham" },
+    { "code": "KPCH", "name": "Kampong Chhnang" },
+    { "code": "KPSP", "name": "Kampong Speu" },
+    { "code": "KPT", "name": "Kampong Thom" },
+    { "code": "KPT2", "name": "Kampot" },
+    { "code": "KAN", "name": "Kandal" },
+    { "code": "KK", "name": "Koh Kong" },
+    { "code": "KRT", "name": "Kratie" },
+    { "code": "MDK", "name": "Mondulkiri" },
+    { "code": "OMC", "name": "Oddar Meanchey" },
+    { "code": "PL", "name": "Pailin" },
+    { "code": "PVH", "name": "Preah Vihear" },
+    { "code": "PVG", "name": "Prey Veng" },
+    { "code": "PST", "name": "Pursat" },
+    { "code": "RTK", "name": "Ratanakiri" },
+    { "code": "SR", "name": "Siem Reap" },
+    { "code": "PSH", "name": "Preah Sihanouk" },
+    { "code": "STG", "name": "Stung Treng" },
+    { "code": "SVR", "name": "Svay Rieng" },
+    { "code": "TAK", "name": "Takeo" },
+    { "code": "TBK", "name": "Tboung Khmum" },
+    { "code": "KEP", "name": "Kep" }
+  ]
+}

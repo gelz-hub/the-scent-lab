@@ -154,7 +154,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <div className="mt-5 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
               <div className="flex flex-col items-center gap-1.5 rounded-lg border border-border p-3 text-center">
                 <Truck className="h-4 w-4 text-brand" strokeWidth={1.5} />
-                Free shipping over $100
+                Free PP delivery over $100
               </div>
               <div className="flex flex-col items-center gap-1.5 rounded-lg border border-border p-3 text-center">
                 <ShieldCheck className="h-4 w-4 text-brand" strokeWidth={1.5} />

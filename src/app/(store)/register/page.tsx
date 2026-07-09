@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const [showPwd, setShowPwd] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name || !email || !password || !confirm) {
       toast.error('Please complete all fields')
@@ -31,13 +31,24 @@ export default function RegisterPage() {
       return
     }
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Could not create account')
+        return
+      }
       toast.success('Account created', {
         description: 'Welcome to The Scent Lab — please sign in.',
       })
       router.push('/login')
-    }, 700)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogle = () => {

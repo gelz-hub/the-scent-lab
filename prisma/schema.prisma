@@ -1,32 +1,840 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
+// Five staff-facing roles plus CUSTOMER — see src/lib/rbac/README.md for the
+// full permission matrix. SUPER_ADMIN/MANAGER/VIEWER are additive; existing
+// ADMIN/STAFF/CUSTOMER values and every row that already has them are
+// unchanged.
+enum Role {
+  CUSTOMER
+  STAFF
+  ADMIN
+  SUPER_ADMIN
+  MANAGER
+  VIEWER
+}
+
 model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // --- Part 7 additions — profile fields, all optional/defaulted ---
+  phone             String?
+  dateOfBirth       DateTime?
+  avatarPublicId    String?
+  avatarUrl         String?
+  // "Future" per spec — stored now so the profile form has somewhere to
+  // save them, not yet read by any checkout/locale logic.
+  preferredLanguage String?   @default("en")
+  preferredCurrency String?   @default("USD")
+
+  pushTokens           PushToken[]
+  wishlist             Wishlist[]
+  notificationPrefs    NotificationPreference?
+  orders               Order[]
+  createdShipments     Shipment[]              @relation("ShipmentCreatedBy")
+  updatedShipments     Shipment[]              @relation("ShipmentUpdatedBy")
+  shipmentStatusEvents ShipmentStatusEvent[]
+  courierChanges       ShipmentCourierChange[]
+  notifications        AccountNotification[]
+  paymentEvents        PaymentEvent[]
+  refundRequests       Refund[]
+  inventoryMovements   InventoryMovement[]
+  addresses            Address[]
+  reviews              Review[]
+  auditLogs            AuditLog[]
+  updatedSettings      SystemSetting[]
+  scheduledReports     ScheduledReport[]
+}
+
+// Append-only — see src/lib/audit/README section in src/lib/rbac/README.md,
+// "Audit Log". Never edited or deleted once written; `before`/`after` are
+// whatever JSON shape the calling code captured (a full row, or just the
+// changed fields), deliberately loose since every kind of admin action has a
+// different shape.
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  resource   String
+  resourceId String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
+
+// Admin-configurable store settings — key/value, one row per setting so new
+// settings never require a migration. See src/lib/settings/README section
+// in src/lib/rbac/README.md, "System Settings".
+model SystemSetting {
+  key         String   @id
+  value       Json
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id])
+  updatedAt   DateTime @updatedAt
+}
+
+enum ScheduledReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Part 9 — architecture only, per spec ("Scheduled Reports (Future)").
+// Stores the configuration (which report, how often, who receives it) for
+// a future scheduler/cron job to read; nothing in this codebase executes
+// or emails these yet. See src/lib/analytics/README.md, "Scheduled
+// Reports".
+model ScheduledReport {
+  id          String                   @id @default(cuid())
+  report      String
+  frequency   ScheduledReportFrequency
+  recipients  Json
+  enabled     Boolean                  @default(true)
+  createdById String?
+  createdBy   User?                    @relation(fields: [createdById], references: [id])
+  lastRunAt   DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+}
+
+// The customer's reusable saved-address book — deliberately separate from
+// OrderAddress (the immutable per-order snapshot). Selecting a saved
+// address at checkout copies its fields into a new OrderAddress; editing or
+// deleting a saved Address here never touches any past order. See
+// src/lib/account/README.md, "Saved Addresses".
+model Address {
+  id                    String                 @id @default(cuid())
+  userId                String
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Customer-chosen label — "Home", "Office", "Family", "Apartment", etc.
+  label                 String
+  recipientName         String
+  phone                 String
+  email                 String?
+  province              String
+  district              String
+  commune               String?
+  village               String?
+  houseNumber           String?
+  streetAddress         String                 @db.Text
+  country               String                 @default("Cambodia")
+  postalCode            String?
+  deliveryType          DeliveryType           @default(HOME)
+  deliveryCompany       DeliveryCompany?
+  deliveryNote          String?                @db.Text
+  preferredDeliveryTime PreferredDeliveryTime?
+  latitude              Float?
+  longitude             Float?
+  // Exactly one Address per user can be true — enforced in
+  // src/lib/account/address-service.ts (transactionally unsets any other
+  // default before setting a new one), not by a DB constraint, since MySQL
+  // has no native "at most one true per group" constraint.
+  isDefault             Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([userId])
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+}
+
+// One review per delivered OrderItem — enforced by @@unique([orderItemId]).
+// A customer can only review something they actually bought and received
+// (see src/lib/account/review-service.ts, which checks the parent Order's
+// Shipment status is DELIVERED before allowing creation).
+model Review {
+  id          String       @id @default(cuid())
+  orderItemId String       @unique
+  productId   String
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating      Int
+  title       String?
+  comment     String?      @db.Text
+  status      ReviewStatus @default(PUBLISHED)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model PushToken {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([productId])
+}
+
+model NotificationPreference {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderUpdates Boolean @default(true)
+  backInStock  Boolean @default(true)
+  priceDrops   Boolean @default(true)
+  promotions   Boolean @default(true)
+  newArrivals  Boolean @default(true)
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_CONFIRMED
+  PREPARING
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryMethod {
+  LOCAL_COURIER
+  LOGISTICS
+}
+
+enum DeliveryCompany {
+  JT_EXPRESS
+  VIREAK_BUNTHAM
+}
+
+enum DeliveryType {
+  HOME
+  OTHER_LOCATION
+}
+
+enum PreferredDeliveryTime {
+  MORNING
+  AFTERNOON
+  EVENING
+  ANYTIME
+}
+
+enum PaymentMethod {
+  ABA_KHQR
+  ABA_PAYWAY
+  CREDIT_CARD
+  COD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  EXPIRED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  status      OrderStatus @default(PENDING_PAYMENT)
+  subtotal    Float
+  discount    Float       @default(0)
+  shippingFee Float       @default(0)
+  total       Float
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items    OrderItem[]
+  address  OrderAddress?
+  // One-to-many so a retried payment (new attempt after EXPIRED/FAILED) never
+  // overwrites the previous one — see Payment.orderId comment.
+  payments Payment[]
+  shipment Shipment?
+  invoice  Invoice?
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  name      String
+  brand     String
+  image     String @db.Text
+  ml        Int
+  price     Float
+  qty       Int
+
+  @@index([orderId])
+}
+
+model OrderAddress {
+  id                    String                 @id @default(cuid())
+  orderId               String                 @unique
+  order                 Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recipientName         String
+  phone                 String
+  email                 String?
+  province              String
+  district              String
+  commune               String?
+  village               String?
+  houseNumber           String?
+  streetAddress         String                 @db.Text
+  country               String                 @default("Cambodia")
+  postalCode            String?
+  deliveryType          DeliveryType           @default(HOME)
+  deliveryMethod        DeliveryMethod
+  deliveryCompany       DeliveryCompany?
+  deliveryNote          String?                @db.Text
+  preferredDeliveryTime PreferredDeliveryTime?
+  latitude              Float?
+  longitude             Float?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+}
+
+// PaymentService is the only thing that writes to this model. Never
+// generates invoices or notifications itself — see src/lib/payment/README.md
+// for the orchestration boundary (an API route calls PaymentService, then
+// separately calls InvoiceService/NotificationService once PAID is observed).
+model Payment {
+  id                    String        @id @default(cuid())
+  // Not @unique — retrying an expired/failed payment creates a new Payment
+  // row against the same order (see src/lib/payment/payment-service.ts
+  // createRetryPayment). Every attempt is preserved permanently; nothing is
+  // ever overwritten. "The" current payment for an order is its most recent
+  // row by createdAt.
+  orderId               String
+  order                 Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method                PaymentMethod
+  // Which concrete provider integration handles this payment — distinct from
+  // `method` (what the customer picked) so e.g. ABA_PAYWAY can later route
+  // through multiple card networks without a schema change.
+  provider              String
+  providerTransactionId String?       @unique @db.VarChar(191)
+  providerReference     String?
+  currency              String        @default("USD")
+  subtotal              Float
+  shippingFee           Float
+  discount              Float
+  totalAmount           Float
+  status                PaymentStatus @default(PENDING)
+  paidAt                DateTime?
+  expiresAt             DateTime?
+  failureReason         String?       @db.Text
+  rawResponse           Json?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  events        PaymentEvent[]
+  refunds       Refund[]
+  webhookEvents WebhookEvent[]
+
+  @@index([status])
+  @@index([orderId])
+}
+
+/**
+ * Append-only payment audit trail — one row per state transition. Never edited, never deleted.
+ */
+model PaymentEvent {
+  id               String        @id @default(cuid())
+  paymentId        String
+  payment          Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  status           PaymentStatus
+  message          String?       @db.Text
+  providerResponse Json?
+  createdById      String?
+  createdBy        User?         @relation(fields: [createdById], references: [id])
+  createdAt        DateTime      @default(now())
+
+  @@index([paymentId])
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  DUPLICATE
+  IGNORED
+  FAILED
+}
+
+// Every inbound provider webhook call, stored before any processing is
+// attempted — this is an audit trail, not a queue: rows are never edited
+// after processing completes except to stamp processedAt/status/errorMessage.
+// A duplicate callback (same providerEventId, or a payload hash we've already
+// seen) is still recorded here — with status DUPLICATE — rather than silently
+// dropped, so every attempt from the provider is visible for support/audit.
+model WebhookEvent {
+  id              String             @id @default(cuid())
+  provider        String
+  // Provider's own idempotency key for this callback, when it sends one
+  // (e.g. ABA PayWay's tran_id + a delivery attempt marker). Nullable
+  // because not every provider guarantees a stable event id.
+  providerEventId String?
+  paymentId       String?
+  payment         Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  // SHA-256 of the raw request body — the fallback idempotency signal when
+  // providerEventId is absent or a provider resends the exact same payload.
+  payloadHash     String
+  requestBody     String             @db.Text
+  headers         Json?
+  receivedAt      DateTime           @default(now())
+  processedAt     DateTime?
+  status          WebhookEventStatus @default(RECEIVED)
+  errorMessage    String?            @db.Text
+
+  @@index([provider, providerEventId])
+  @@index([payloadHash])
+  @@index([paymentId])
+}
+
+/**
+ * Future-ready — refunds never delete Payment history, they're additive records against it.
+ */
+model Refund {
+  id            String       @id @default(cuid())
+  paymentId     String
+  payment       Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount        Float
+  status        RefundStatus @default(REQUESTED)
+  reason        String?      @db.Text
+  requestedById String?
+  requestedBy   User?        @relation(fields: [requestedById], references: [id])
+  processedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([paymentId])
+}
+
+enum InvoiceStatus {
+  /**
+   * Number reserved, PDF not yet generated/uploaded. Immutable audit trail — never deleted.
+   */
+  PENDING
+  GENERATED
+  /**
+   * Number was reserved and permanently consumed even though generation failed — never reused.
+   */
+  FAILED
+}
+
+// Stored independently from Order — generation is a side effect of payment
+// succeeding, never of shipment. Email fields are future-ready and nullable;
+// InvoiceService never depends on an EmailService (see src/lib/invoice/README.md).
+//
+// The invoiceNumber is reserved (this row created, status: PENDING) BEFORE
+// the PDF is rendered or uploaded — see "Reserve Invoice Number" in
+// src/lib/invoice/README.md. This row is never deleted, even on failure:
+// once a number is allocated it is permanently consumed, exactly like a
+// paper invoice book. Retries reuse the same reserved number rather than
+// allocating a new one.
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  // Cloudinary is the permanent storage provider. pdfPublicId is the
+  // canonical handle for any future operation (delete/replace/regenerate/
+  // move/version) — never parse pdfUrl to derive it. Both are null while
+  // status is PENDING or FAILED — no PDF exists yet.
+  pdfPublicId   String?       @db.Text
+  pdfUrl        String?       @db.Text
+  status        InvoiceStatus @default(PENDING)
+  generatedAt   DateTime?
+
+  // Future email support — nullable until EmailService exists.
+  emailedAt   DateTime?
+  emailStatus String?
+  resendCount Int       @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Post {
+// Atomic sequence counters for InvoiceNumberService's future sequential
+// formats (INV-2026-000001, INV-202607-000234, ...). `scope` is whatever the
+// active format resets on — "GLOBAL" for none, a year, or a year+month.
+// Not used by the current default format (DATE_ORDER_SUFFIX), which needs
+// no counter since it's already unique via orderId.
+model InvoiceNumberCounter {
   id        String   @id @default(cuid())
+  scope     String   @unique
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+enum NotificationType {
+  PAYMENT_CONFIRMED
+  INVOICE_GENERATED
+  ORDER_PREPARING
+  SHIPMENT_UPDATE
+  GENERIC
+}
+
+/**
+ * In-app notification center — deliberately separate from Firebase push (src/lib/notifications.ts).
+ */
+model AccountNotification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
   title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  message   String           @db.Text
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+enum ShippingStatus {
+  PENDING
+  PREPARING
+  READY_FOR_SHIPMENT
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED_DELIVERY
+  RETURNED
+  CANCELLED
+}
+
+// Fulfillment/logistics record — deliberately separate from Order. Order
+// carries the financial snapshot (subtotal/shippingFee/total) and the
+// customer-facing OrderStatus timeline; Shipment is the staff-operated
+// record of how the parcel actually moves (courier, tracking, status).
+model Shipment {
+  id                String           @id @default(cuid())
+  orderId           String           @unique
+  order             Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryMethod    DeliveryMethod
+  deliveryCompany   DeliveryCompany?
+  shippingFee       Float
+  estimatedDelivery String
+  actualDeliveryAt  DateTime?
+  trackingNumber    String?
+  trackingUrl       String?
+  status            ShippingStatus   @default(PENDING)
+  // Split per production requirements: customerNotes is staff-authored but
+  // shown to the customer (e.g. a delay explanation); internalNotes never is.
+  customerNotes     String?          @db.Text
+  internalNotes     String?          @db.Text
+  createdById       String?
+  createdBy         User?            @relation("ShipmentCreatedBy", fields: [createdById], references: [id])
+  updatedById       String?
+  updatedBy         User?            @relation("ShipmentUpdatedBy", fields: [updatedById], references: [id])
+  // Soft delete only — shipments are never physically removed, see src/lib/shipping/README.md.
+  archivedAt        DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  statusEvents   ShipmentStatusEvent[]
+  courierChanges ShipmentCourierChange[]
+}
+
+/**
+ * Permanent record of any staff override of the customer's chosen courier. Append-only, never edited.
+ */
+model ShipmentCourierChange {
+  id              String           @id @default(cuid())
+  shipmentId      String
+  shipment        Shipment         @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  previousCourier DeliveryCompany?
+  newCourier      DeliveryCompany
+  reason          String           @db.Text
+  changedById     String?
+  changedBy       User?            @relation(fields: [changedById], references: [id])
+  createdAt       DateTime         @default(now())
+
+  @@index([shipmentId])
+}
+
+/**
+ * Append-only audit trail — one row per status transition, so every change carries its own timestamp/actor/note.
+ */
+model ShipmentStatusEvent {
+  id          String         @id @default(cuid())
+  shipmentId  String
+  shipment    Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  status      ShippingStatus
+  note        String?        @db.Text
+  updatedById String?
+  updatedBy   User?          @relation(fields: [updatedById], references: [id])
+  createdAt   DateTime       @default(now())
+
+  @@index([shipmentId])
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum ProductVisibility {
+  PUBLIC
+  PRIVATE
+  HIDDEN
+}
+
+enum InventoryMovementType {
+  PURCHASE
+  SALE
+  RETURN
+  ADJUSTMENT
+  DAMAGE
+  TRANSFER
+  /**
+   * Stock earmarked for a paid-but-not-yet-shipped order. Never changes currentStock, only reservedStock.
+   */
+  RESERVATION
+  /**
+   * A reservation given back — order cancelled/failed before shipment.
+   */
+  RESERVATION_RELEASE
+}
+
+// The storefront-facing catalog model — deliberately UNCHANGED in its
+// original fields (brand/category/collection/gallery/volumes/notes/etc. stay
+// exactly as they were) so the existing storefront (product listing pages,
+// search, cart, product detail) keeps working without modification. The
+// fields below are additive: they're what the new Part 6 Product & Inventory
+// module (ProductService/InventoryService, admin dashboards) is built
+// against going forward. See src/lib/inventory/README.md.
+model Product {
+  id             String @id @default(cuid())
+  slug           String @unique
+  name           String
+  brand          String
+  brandSlug      String
+  gender         String
+  category       String
+  collection     Json // string[]
+  image          String @db.Text
+  gallery        Json // string[]
+  volumes        Json // { ml: number; price: number }[]
+  compareAtPrice Float?
+  rating         Float  @default(0)
+  reviewCount    Int    @default(0)
+  description    String @db.Text
+  story          String @db.Text
+  notes          Json // { top: string[]; heart: string[]; base: string[] }
+  longevity      Int    @default(3)
+  projection     Int    @default(3)
+  sillage        Int    @default(3)
+  seasons        Json // string[]
+  occasions      Json // string[]
+  country        String
+  year           Int
+  tags           Json // string[]
+  // Legacy aggregate stock counter — display-only going forward. The
+  // authoritative source of truth for inventory is Inventory (per
+  // ProductVariant), never this field. Kept so existing storefront
+  // "in stock" badges keep working unmodified.
+  stock          Int    @default(0)
+
+  // --- Part 6 additions (all optional/defaulted — nothing above changes) ---
+  // Deliberately NO sku/barcode/price/costPrice/weight/volume/stock here —
+  // those always belong to ProductVariant (see ProductVariant + Inventory
+  // below and src/lib/inventory/README.md, "Product Variants"). Product
+  // stores only shared information: identity, taxonomy, images, SEO.
+  shortDescription      String?           @db.Text
+  brandId               String?
+  brandRef              Brand?            @relation(fields: [brandId], references: [id])
+  categoryId            String?
+  categoryRef           Category?         @relation(fields: [categoryId], references: [id])
+  collectionId          String?
+  collectionRef         Collection?       @relation(fields: [collectionId], references: [id])
+  status                ProductStatus     @default(ACTIVE)
+  visibility            ProductVisibility @default(PUBLIC)
+  currency              String            @default("USD")
+  featuredImagePublicId String?
+  featuredImageUrl      String?
+  seoTitle              String?
+  seoDescription        String?           @db.Text
+  // Soft delete — a product is never physically removed once real orders
+  // may reference it (via the OrderItem snapshot's productId).
+  deletedAt             DateTime?
+
+  images   ProductImage[]
+  variants ProductVariant[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@index([categoryId])
+  @@index([collectionId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Brand {
+  id           String            @id @default(cuid())
+  name         String
+  slug         String            @unique
+  logoPublicId String?
+  logoUrl      String?
+  description  String?           @db.Text
+  visibility   ProductVisibility @default(PUBLIC)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  products Product[]
+}
+
+model Category {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  description String?           @db.Text
+  visibility  ProductVisibility @default(PUBLIC)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  products Product[]
+}
+
+model Collection {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  description String?           @db.Text
+  visibility  ProductVisibility @default(PUBLIC)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  products Product[]
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  publicId  String
+  url       String   @db.Text
+  altText   String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+// Inventory is always tracked per variant, never on Product directly (even
+// for a product with only one size) — see src/lib/inventory/README.md.
+model ProductVariant {
+  id            String        @id @default(cuid())
+  productId     String
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku           String        @unique
+  barcode       String?       @unique
+  // Human label, e.g. "50ml" — volumeMl is the machine-readable size used to
+  // resolve which variant an order line item (OrderItem.ml) refers to.
+  name          String?
+  volumeMl      Int?
+  price         Float
+  costPrice     Float?
+  weight        Float?
+  status        ProductStatus @default(ACTIVE)
+  imagePublicId String?
+  imageUrl      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  inventory Inventory?
+  movements InventoryMovement[]
+
+  @@index([productId])
+  @@index([productId, volumeMl])
+}
+
+// One row per variant. currentStock/reservedStock are the only stored
+// numbers — availableStock (currentStock - reservedStock) is always
+// computed, never stored, so it can't drift out of sync.
+model Inventory {
+  id            String         @id @default(cuid())
+  variantId     String         @unique
+  variant       ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  currentStock  Int            @default(0)
+  reservedStock Int            @default(0)
+  safetyStock   Int            @default(0)
+  reorderLevel  Int            @default(0)
+  updatedAt     DateTime       @updatedAt
+
+  @@index([variantId])
+}
+
+// Append-only audit trail — one row per stock-affecting event. Never
+// edited, never deleted, exactly like PaymentEvent/ShipmentStatusEvent.
+model InventoryMovement {
+  id            String                @id @default(cuid())
+  variantId     String
+  variant       ProductVariant        @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  type          InventoryMovementType
+  // Signed — positive for stock coming in (PURCHASE/RETURN/RELEASE),
+  // negative for stock going out (SALE/DAMAGE/RESERVATION uses a positive
+  // quantity against reservedStock specifically — see InventoryService).
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reason        String?               @db.Text
+  // Free-form external reference — an Order id for SALE/RESERVATION/
+  // RESERVATION_RELEASE movements, a PO number for PURCHASE, etc.
+  referenceId   String?
+  createdById   String?
+  createdBy     User?                 @relation(fields: [createdById], references: [id])
+  createdAt     DateTime              @default(now())
+
+  @@index([variantId])
+  @@index([referenceId])
 }

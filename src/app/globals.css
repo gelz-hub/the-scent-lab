@@ -168,37 +168,131 @@
 }
 
 @layer utilities {
+  /* ── Marquee ─────────────────────────────────── */
   @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 50s linear infinite;
+  }
+  .animate-marquee-slow {
+    animation: marquee 80s linear infinite;
+  }
+
+  /* ── Scroll-reveal keyframes ────────────────── */
+  @keyframes reveal-up {
     from {
-      transform: translateX(0);
+      opacity: 0;
+      transform: translateY(24px);
     }
     to {
-      transform: translateX(-50%);
+      opacity: 1;
+      transform: translateY(0);
     }
   }
-  .animate-[marquee_40s_linear_infinite] {
-    animation: marquee 40s linear infinite;
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* ── Font display utilities ─────────────────── */
   .font-display {
     font-family: var(--font-cormorant), ui-serif, Georgia, serif;
     font-weight: 500;
     letter-spacing: -0.01em;
   }
+  .font-display-light {
+    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+  .font-display-bold {
+    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
   .text-balance {
     text-wrap: balance;
   }
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+
+  /* ── Section dividers ────────────────────────── */
+  .section-divider-soft {
+    border-bottom: 1px solid transparent;
+    border-image: linear-gradient(
+      to right,
+      transparent 0%,
+      var(--border) 20%,
+      var(--border) 80%,
+      transparent 100%
+    ) 1;
   }
+  .section-divider-fade {
+    position: relative;
+  }
+  .section-divider-fade::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--border) 15%,
+      var(--border) 85%,
+      transparent
+    );
+  }
+
+  /* ── Subtle noise texture ────────────────────── */
+  .bg-noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Scroll utilities ────────────────────────── */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  /* Hide horizontal scrollbar but keep scroll */
-  .scroll-snap-x {
-    scroll-snap-type: x mandatory;
+  .scroll-snap-x { scroll-snap-type: x mandatory; }
+  .scroll-snap-start { scroll-snap-align: start; }
+
+  /* ── Easing classes ──────────────────────────── */
+  .ease-out-expo {
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .scroll-snap-start {
-    scroll-snap-align: start;
+  .ease-out-spring {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }

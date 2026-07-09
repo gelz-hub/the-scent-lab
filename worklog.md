@@ -24,4 +24,4 @@ Stage Summary:
 - Design system preserved exactly: Cormorant Garamond + Inter, #2F5D50 accent, flat UI, same spacing/animations
 - Reusable ProductListing component powers /shop, /women, /men, /unisex, /new-arrivals, /best-sellers, /sale, /collections/[slug], /brands/[slug]
 - generateStaticParams + generateMetadata on all dynamic routes for SEO
-- Remaining: account pages (/account/*, /login, /register) and admin pages (/admin/*) — delegated to subagents
+- Account pages (/account, /account/orders, /account/wishlist), /login, /register, and admin pages (/admin, /admin/products, /admin/orders, /admin/users) completed by delegated subagents and verified present
