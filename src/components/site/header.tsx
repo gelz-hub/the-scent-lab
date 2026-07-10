@@ -12,10 +12,12 @@ import {
   X,
   ChevronRight,
 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { useStore } from '@/lib/store'
 import { ThemeToggle } from './theme-toggle'
 import { NotificationBell } from './notification-bell'
 import { cn } from '@/lib/utils'
+import { ADMIN_ROLES, type AdminRole } from '@/lib/rbac/permissions'
 
 const NAV: { label: string; href: string; accent?: boolean }[] = [
   { label: 'Shop', href: '/shop' },
@@ -34,7 +36,6 @@ const MOBILE_EXTRA: { label: string; href: string; accent?: boolean }[] = [
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
   { label: 'Account', href: '/account' },
-  { label: 'Admin', href: '/admin' },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -51,6 +52,16 @@ export function Header() {
   const cartCountValue = useStore((s) => s.cart.reduce((n, l) => n + l.qty, 0))
   const wishCount = useStore((s) => s.wishlist.length)
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const role = session?.user?.role as AdminRole | undefined
+  const isAdmin = !!role && ADMIN_ROLES.includes(role)
+
+  const mobileNav = React.useMemo(() => {
+    const journal = NAV.find((item) => item.label === 'Journal')!
+    const sale = NAV.find((item) => item.label === 'Sale')!
+    const items = [journal, sale, ...MOBILE_EXTRA]
+    return isAdmin ? [...items, { label: 'Admin', href: '/admin' }] : items
+  }, [isAdmin])
 
   const [scrolled, setScrolled] = React.useState(false)
 
@@ -79,30 +90,31 @@ export function Header() {
             : 'border-transparent bg-background'
         )}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
-          {/* Mobile menu */}
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
+          {/* Mobile/tablet menu (through lg — see header notes) */}
           <button
             onClick={() => setMobileNavOpen(true)}
-            className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface md:hidden"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-surface lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" strokeWidth={1.5} />
           </button>
 
           {/* Logo */}
-          <Link href="/" className="group flex shrink-0 items-center" aria-label="The Scent Lab home">
-            <span className="hidden whitespace-nowrap font-display font-medium leading-none tracking-tight md:inline md:text-[20px] lg:text-[22px]">
+          <Link href="/" className="group flex min-w-0 shrink items-center" aria-label="The Scent Lab home">
+            <span className="hidden whitespace-nowrap font-display font-medium leading-none tracking-tight lg:inline lg:text-[20px] xl:text-[22px]">
               The Scent Lab
             </span>
-            <span className="font-display font-medium leading-[1.05] tracking-tight text-[15px] md:hidden">
-              The Scent
-              <br />
-              Lab
+            <span className="hidden whitespace-nowrap font-display text-[17px] font-medium leading-none tracking-tight md:inline lg:hidden">
+              The Scent Lab
+            </span>
+            <span className="whitespace-nowrap font-display text-[13px] font-medium leading-none tracking-tight md:hidden">
+              The Scent Lab
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="ml-6 hidden items-center gap-1 md:flex">
+          {/* Desktop nav — full 8-item nav only fits from lg (1024px) up; md–lg uses the mobile/tablet hamburger nav instead of squeezing items */}
+          <nav className="ml-6 hidden items-center gap-1 lg:flex">
             {NAV.map((item) => (
               <Link
                 key={item.label}
@@ -167,16 +179,20 @@ export function Header() {
         </div>
       </header>
 
-      {/* Mobile nav */}
+      {/* Mobile/tablet nav */}
       {mobileNavOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden">
+        <div className="fixed inset-0 z-[60] lg:hidden">
           <div
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setMobileNavOpen(false)}
           />
           <div className="absolute left-0 top-0 flex h-full w-[82%] max-w-sm flex-col bg-background shadow-xl">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <Link href="/" onClick={() => setMobileNavOpen(false)} className="font-display text-xl">
+              <Link
+                href="/"
+                onClick={() => setMobileNavOpen(false)}
+                className="whitespace-nowrap font-display text-lg"
+              >
                 The Scent Lab
               </Link>
               <button
@@ -188,7 +204,7 @@ export function Header() {
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto px-2 py-4">
-              {[...NAV, ...MOBILE_EXTRA].map((item, i) => (
+              {mobileNav.map((item, i) => (
                 <Link
                   key={item.label + i}
                   href={item.href}
