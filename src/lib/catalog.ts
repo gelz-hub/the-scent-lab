@@ -1,10 +1,9 @@
 // Server-side catalog data layer — replaces the old static src/lib/data.ts
 // catalog exports (products/brands/collections/categories) with real Prisma
 // queries. Returned objects are shaped to match the `Product`/`Brand` types
-// still exported from src/lib/data.ts (journal-only now) so presentational
-// components (ProductCard, ProductListing, BrandCard, …) didn't need to
-// change — only the page-level call sites that used to import the static
-// arrays.
+// still exported from src/lib/data.ts so presentational components
+// (ProductCard, ProductListing, BrandCard, …) didn't need to change — only
+// the page-level call sites that used to import the static arrays.
 //
 // Performance notes (Phase B):
 // - Every query below uses `select` (only the columns toProduct()/toBrand()

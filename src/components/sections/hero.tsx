@@ -2,6 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, Sparkles, ShieldCheck, Truck, Package } from 'lucide-react'
 
@@ -140,20 +141,28 @@ export function HeroSection({ brandCount = 0, productCount = 0 }: HeroSectionPro
           transition={{ duration: 1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="relative order-1 aspect-[4/3] lg:order-2 lg:aspect-auto lg:h-[700px]"
         >
-          {/* Abstract, brand-neutral visual — no product photography until
-              real catalog imagery exists (see admin-managed hero banners,
-              Phase 2). */}
+          {/* Soft luxury backdrop behind the product photo */}
+          <div className="absolute inset-0 bg-gradient-to-br from-accent via-surface to-background">
+            <div className="absolute inset-0 opacity-40 [background:radial-gradient(circle_at_30%_20%,theme(colors.brand/25),transparent_55%),radial-gradient(circle_at_75%_65%,theme(colors.brand/15),transparent_50%)]" />
+          </div>
+
+          {/* Hero product photo — contained, never stretched or cropped */}
           <motion.div
             style={{ y: imageY, scale: imageScale }}
-            className="absolute inset-0 bg-gradient-to-br from-accent via-surface to-background"
+            className="absolute inset-0 flex items-center justify-center p-8 sm:p-12 lg:p-14"
           >
-            <div className="absolute inset-0 opacity-40 [background:radial-gradient(circle_at_30%_20%,theme(colors.brand/25),transparent_55%),radial-gradient(circle_at_75%_65%,theme(colors.brand/15),transparent_50%)]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-display text-[13vw] font-medium italic text-foreground/[0.06] lg:text-[7vw]">
-                The Scent Lab
-              </span>
+            <div className="relative h-full w-full drop-shadow-[0_25px_45px_rgba(0,0,0,0.18)]">
+              <Image
+                src="/images/hero-creed.png"
+                alt="Featured fragrance"
+                fill
+                priority
+                sizes="(max-width: 1024px) 90vw, 45vw"
+                className="object-contain"
+              />
             </div>
           </motion.div>
+
           {/* Gradient overlay for depth */}
           <motion.div
             style={{ opacity: overlayOpacity }}

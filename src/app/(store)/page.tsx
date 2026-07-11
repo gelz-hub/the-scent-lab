@@ -5,7 +5,6 @@ import { ProductGridSection } from '@/components/sections/product-grid'
 import { FeatureBanner } from '@/components/sections/feature-banner'
 import { CollectionSection } from '@/components/sections/collections'
 import { ReviewsSection } from '@/components/sections/reviews'
-import { JournalSection } from '@/components/sections/journal'
 import { NewsletterSection } from '@/components/sections/newsletter'
 import {
   getProductCount,
@@ -79,10 +78,7 @@ export default async function HomePage() {
       {/* ── 9. Social proof ─────────────────────────── */}
       <ReviewsSection reviews={reviews} />
 
-      {/* ── 10. Journal ─────────────────────────────── */}
-      <JournalSection />
-
-      {/* ── 11. Newsletter ──────────────────────────── */}
+      {/* ── 10. Newsletter ──────────────────────────── */}
       <NewsletterSection />
     </>
   )

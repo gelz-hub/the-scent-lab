@@ -23,7 +23,6 @@ const COLUMNS = [
       { label: 'Brands', href: '/brands' },
       { label: 'Gift Sets', href: '/collections/gift' },
       { label: 'Collections', href: '/collections' },
-      { label: 'Journal', href: '/journal' },
       { label: 'About Us', href: '/about' },
       { label: 'Contact', href: '/contact' },
     ],
@@ -34,7 +33,7 @@ const COLUMNS = [
       { label: 'Track Order', href: '/account/orders' },
       { label: 'Shipping', href: '/shipping' },
       { label: 'Returns', href: '/returns' },
-      { label: 'FAQ', href: '/journal' },
+      { label: 'FAQ', href: '/contact' },
     ],
   },
   {
