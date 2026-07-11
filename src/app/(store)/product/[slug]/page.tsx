@@ -3,13 +3,9 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Truck, ShieldCheck, RefreshCcw, ChevronRight } from 'lucide-react'
-import {
-  getProduct,
-  products,
-  productFAQs,
-  relatedProducts,
-  type Product,
-} from '@/lib/data'
+import { productFAQs } from '@/lib/data'
+import { getProduct, getProducts, getRelatedProducts } from '@/lib/catalog'
+import { requirePermission } from '@/lib/rbac/require-permission'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 import { StarRating } from '@/components/site/star-rating'
 import { ProductCard } from '@/components/site/product-card'
@@ -23,15 +19,17 @@ import {
 
 interface PageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ preview?: string }>
 }
 
 export async function generateStaticParams() {
+  const products = await getProducts()
   return products.map((p) => ({ slug: p.slug }))
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const product = getProduct(slug)
+  const product = await getProduct(slug)
   if (!product) return { title: 'Product not found' }
   return {
     title: `${product.brand} ${product.name}`,
@@ -55,12 +53,20 @@ function PerfBars({ label, value }: { label: string; value: number }) {
   )
 }
 
-export default async function ProductDetailPage({ params }: PageProps) {
+export default async function ProductDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params
-  const product = getProduct(slug)
+  const { preview } = await searchParams
+
+  let allowPreview = false
+  if (preview === '1') {
+    const { allowed } = await requirePermission('products', 'read')
+    allowPreview = allowed
+  }
+
+  const product = await getProduct(slug, allowPreview)
   if (!product) notFound()
 
-  const related = relatedProducts(product, 4)
+  const related = await getRelatedProducts(product, 4)
 
   return (
     <div>

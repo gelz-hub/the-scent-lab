@@ -34,12 +34,25 @@ function headersToJson(headers: Headers): Record<string, string> {
  * TODO before production: ABA signs callbacks — verify that signature here
  * once the exact callback payload/signing scheme is confirmed against a live
  * sandbox callback (not yet observed).
+ *
+ * Deliberately not implemented yet: our current ABA PayWay sandbox can
+ * generate QR codes but cannot complete a real payment, so there is no way
+ * to observe a live callback and validate the signing scheme against it.
+ * Signature verification MUST be implemented here before this endpoint is
+ * exposed to real traffic — do not go to production without it. Revisit
+ * once either (a) a fully functional ABA production account, or (b) a
+ * sandbox that actually delivers callbacks, is available. Until then, the
+ * transaction re-verification against ABA's Check Transaction API below
+ * (verifyAndAdvanceOrder) remains the only trust boundary — it is why an
+ * attacker cannot forge a PAID status via this callback alone, but they can
+ * still trigger verification calls/idempotency-tracking noise for arbitrary
+ * tran_ids, which real signature verification would close off.
  */
 export async function POST(req: Request) {
   // 120 / minute / IP — generous, since ABA's own infra is the caller and
   // legitimate delivery + retry volume is unpredictable, but still bounds
   // worst-case abuse of an unauthenticated public endpoint.
-  const { allowed } = rateLimit(`webhook:aba-payway:${clientIp(req)}`, 120, 60 * 1000)
+  const { allowed } = await rateLimit(`webhook:aba-payway:${clientIp(req)}`, 120, 60 * 1000)
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
   }

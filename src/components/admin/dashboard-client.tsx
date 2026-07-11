@@ -2,25 +2,16 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Area,
-  AreaChart,
-} from 'recharts'
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
+  Package,
+  Tag,
+  LayoutGrid,
+  Sparkles,
   ShoppingCart,
   Users,
-  Receipt,
-  ArrowUpRight,
+  AlertTriangle,
+  XCircle,
   ArrowRight,
 } from 'lucide-react'
 import {
@@ -30,7 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -40,319 +30,238 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  orders,
-  topProducts,
-  revenueByMonth,
-  summaryStats,
-  recentActivity,
-  formatCurrency,
-  formatNumber,
-  type OrderStatus,
-} from '@/lib/admin-data'
+import { EmptyState } from '@/components/site/empty-state'
+import { formatPrice } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
+type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PAYMENT_CONFIRMED'
+  | 'PREPARING'
+  | 'PACKED'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING_PAYMENT: 'Pending Payment',
+  PAYMENT_CONFIRMED: 'Payment Confirmed',
+  PREPARING: 'Preparing',
+  PACKED: 'Packed',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+}
+
 const STATUS_CLASSES: Record<OrderStatus, string> = {
-  Delivered: 'bg-success/10 text-success',
-  Shipped: 'bg-brand/10 text-brand',
-  Processing: 'bg-amber-500/10 text-amber-600',
-  Cancelled: 'bg-danger/10 text-danger',
+  PENDING_PAYMENT: 'bg-amber-500/10 text-amber-600',
+  PAYMENT_CONFIRMED: 'bg-brand/10 text-brand',
+  PREPARING: 'bg-brand/10 text-brand',
+  PACKED: 'bg-brand/10 text-brand',
+  SHIPPED: 'bg-accent text-foreground',
+  DELIVERED: 'bg-success/10 text-success',
+  CANCELLED: 'bg-danger/10 text-danger',
 }
 
-interface StatCardProps {
+interface RecentOrder {
+  id: string
+  number: string
+  customerName: string
+  email: string
+  date: string
+  status: OrderStatus
+  total: number
+}
+
+interface RecentProduct {
+  id: string
+  name: string
+  brand: string
+  slug: string
+  image: string
+  createdAt: string
+}
+
+interface DashboardPayload {
+  totalProducts?: number
+  totalBrands?: number
+  totalCategories?: number
+  totalCollections?: number
+  totalOrders?: number
+  totalCustomers?: number
+  lowStockCount?: number
+  outOfStockCount?: number
+  recentOrders?: RecentOrder[]
+  recentProducts?: RecentProduct[]
+}
+
+interface StatTileProps {
   label: string
-  value: string
-  trend: number
+  value: number
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  tone?: 'default' | 'warning' | 'danger'
 }
 
-function StatCard({ label, value, trend, icon: Icon }: StatCardProps) {
-  const positive = trend >= 0
+function StatTile({ label, value, icon: Icon, tone = 'default' }: StatTileProps) {
   return (
-    <Card className="rounded-xl border-border bg-card p-6">
-      <CardContent className="flex flex-col gap-4 p-0">
-        <div className="flex items-center justify-between">
-          <div className="grid h-10 w-10 place-items-center rounded-lg bg-surface text-foreground">
-            <Icon className="h-5 w-5" strokeWidth={1.5} />
-          </div>
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold',
-              positive ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
-            )}
-          >
-            {positive ? (
-              <TrendingUp className="h-3 w-3" strokeWidth={2} />
-            ) : (
-              <TrendingDown className="h-3 w-3" strokeWidth={2} />
-            )}
-            {positive ? '+' : ''}
-            {trend.toFixed(1)}%
-          </span>
+    <Card className="rounded-xl border-border bg-card p-5">
+      <CardContent className="flex items-center gap-3 p-0">
+        <div
+          className={cn(
+            'grid h-10 w-10 shrink-0 place-items-center rounded-lg',
+            tone === 'danger' ? 'bg-danger/10 text-danger' : tone === 'warning' ? 'bg-amber-500/10 text-amber-600' : 'bg-surface text-foreground'
+          )}
+        >
+          <Icon className="h-5 w-5" strokeWidth={1.5} />
         </div>
-        <div>
-          <div className="font-display text-3xl font-medium tracking-tight">
-            {value}
-          </div>
-          <div className="mt-1 text-sm text-muted-foreground">{label}</div>
+        <div className="min-w-0">
+          <div className="font-display text-2xl font-medium tracking-tight">{value}</div>
+          <div className="truncate text-xs text-muted-foreground">{label}</div>
         </div>
       </CardContent>
     </Card>
   )
 }
 
-interface RevenueTooltipProps {
-  active?: boolean
-  payload?: Array<{ value: number }>
-  label?: string
-}
-
-function RevenueTooltip({ active, payload, label }: RevenueTooltipProps) {
-  if (!active || !payload || payload.length === 0) return null
-  return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <div className="font-medium text-foreground">{label}</div>
-      <div className="mt-0.5 text-muted-foreground">
-        Revenue: <span className="font-semibold text-foreground">{formatCurrency(payload[0].value)}</span>
-      </div>
-    </div>
-  )
-}
-
 export function DashboardClient() {
-  const recentOrders = orders.slice(0, 5)
-  const topFive = topProducts.slice(0, 5)
-  const maxRevenue = Math.max(...revenueByMonth.map((d) => d.revenue))
+  const [data, setData] = React.useState<DashboardPayload | null>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    fetch('/api/admin/dashboard')
+      .then((res) => res.json())
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading || !data) return null
+
+  const recentOrders = data.recentOrders ?? []
+  const recentProducts = data.recentProducts ?? []
+
+  const tiles: StatTileProps[] = [
+    { label: 'Total Products', value: data.totalProducts ?? 0, icon: Package, tone: 'default' },
+    { label: 'Total Brands', value: data.totalBrands ?? 0, icon: Tag, tone: 'default' },
+    { label: 'Total Categories', value: data.totalCategories ?? 0, icon: LayoutGrid, tone: 'default' },
+    { label: 'Total Collections', value: data.totalCollections ?? 0, icon: Sparkles, tone: 'default' },
+    { label: 'Total Orders', value: data.totalOrders ?? 0, icon: ShoppingCart, tone: 'default' },
+    { label: 'Total Customers', value: data.totalCustomers ?? 0, icon: Users, tone: 'default' },
+    { label: 'Low Stock', value: data.lowStockCount ?? 0, icon: AlertTriangle, tone: 'warning' },
+    { label: 'Out of Stock', value: data.outOfStockCount ?? 0, icon: XCircle, tone: 'danger' },
+  ]
+
+  const showTiles = tiles.length > 0
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      {showTiles && (
         <div>
-          <h1 className="font-display text-3xl font-medium tracking-tight">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Welcome back — here&apos;s how The Scent Lab is performing today.
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            All-time overview
           </p>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          Last updated: {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total Revenue"
-          value={formatCurrency(summaryStats.totalRevenue)}
-          trend={summaryStats.revenueTrend}
-          icon={DollarSign}
-        />
-        <StatCard
-          label="Orders"
-          value={formatNumber(summaryStats.orders)}
-          trend={summaryStats.ordersTrend}
-          icon={ShoppingCart}
-        />
-        <StatCard
-          label="Customers"
-          value={formatNumber(summaryStats.customers)}
-          trend={summaryStats.customersTrend}
-          icon={Users}
-        />
-        <StatCard
-          label="Avg Order Value"
-          value={formatCurrency(summaryStats.avgOrderValue)}
-          trend={summaryStats.aovTrend}
-          icon={Receipt}
-        />
-      </div>
-
-      {/* Revenue chart */}
-      <Card className="rounded-xl border-border bg-card">
-        <CardHeader className="flex flex-row items-start justify-between">
-          <div>
-            <CardTitle className="font-display text-xl font-medium tracking-tight">
-              Revenue Overview
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Monthly revenue for the last 12 months
-            </CardDescription>
-          </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link href="/admin/analytics">
-              View analytics
-              <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueByMonth} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--brand)" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="var(--brand)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  stroke="var(--muted-foreground)"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="var(--muted-foreground)"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v: number) => `$${v / 1000}k`}
-                  domain={[0, maxRevenue * 1.15]}
-                />
-                <Tooltip content={<RevenueTooltip />} cursor={{ stroke: 'var(--border)', strokeWidth: 1 }} />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="var(--brand)"
-                  strokeWidth={2}
-                  fill="url(#revenueGradient)"
-                  dot={false}
-                  activeDot={{ r: 4, fill: 'var(--brand)' }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent orders + Top products */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Recent orders */}
-        <Card className="rounded-xl border-border bg-card lg:col-span-3">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="font-display text-xl font-medium tracking-tight">
-                Recent Orders
-              </CardTitle>
-              <CardDescription className="mt-1">Latest 5 orders</CardDescription>
-            </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/admin/orders">
-                View all
-                <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-6">Order</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden sm:table-cell">Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="pr-6 text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="pl-6 font-mono text-xs font-medium">
-                      {order.number}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-foreground">{order.customerName}</div>
-                      <div className="text-xs text-muted-foreground">{order.email}</div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-muted-foreground">
-                      {order.date}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium',
-                          STATUS_CLASSES[order.status]
-                        )}
-                      >
-                        {order.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="pr-6 text-right font-medium">
-                      {formatCurrency(order.total)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Top products */}
-        <Card className="rounded-xl border-border bg-card lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-display text-xl font-medium tracking-tight">
-              Top Products
-            </CardTitle>
-            <CardDescription className="mt-1">By units sold this month</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-1">
-            {topFive.map((p, i) => (
-              <div
-                key={p.name}
-                className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface"
-              >
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-xs font-semibold text-foreground">
-                  {i + 1}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-foreground">
-                    {p.name}
-                  </div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {p.brand}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold text-foreground">
-                    {formatCurrency(p.revenue)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {p.units} units
-                  </div>
-                </div>
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {tiles.map((t) => (
+              <StatTile key={t.label} {...t} />
             ))}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      )}
 
-      {/* Activity feed */}
-      <Card className="rounded-xl border-border bg-card">
-        <CardHeader>
-          <CardTitle className="font-display text-xl font-medium tracking-tight">
-            Recent Activity
-          </CardTitle>
-          <CardDescription className="mt-1">Latest events across the store</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1">
-          {recentActivity.slice(0, 6).map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface"
-            >
-              <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm text-foreground">{item.text}</div>
-                <div className="text-xs text-muted-foreground">{item.time}</div>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {(data.recentOrders !== undefined || data.recentProducts !== undefined) && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {data.recentOrders !== undefined && (
+            <Card className="rounded-xl border-border bg-card">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="font-display text-xl font-medium tracking-tight">Recent Orders</CardTitle>
+                  <CardDescription className="mt-1">Latest 5 orders</CardDescription>
+                </div>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/admin/orders">
+                    View all
+                    <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent className={recentOrders.length === 0 ? undefined : 'p-0'}>
+                {recentOrders.length === 0 ? (
+                  <EmptyState title="No orders yet." />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="pl-6">Order</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="pr-6 text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="pl-6 font-mono text-xs font-medium">{order.number}</TableCell>
+                          <TableCell>
+                            <div className="font-medium text-foreground">{order.customerName}</div>
+                            <div className="text-xs text-muted-foreground">{order.email}</div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium', STATUS_CLASSES[order.status])}>
+                              {STATUS_LABELS[order.status]}
+                            </span>
+                          </TableCell>
+                          <TableCell className="pr-6 text-right font-medium">{formatPrice(order.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {data.recentProducts !== undefined && (
+            <Card className="rounded-xl border-border bg-card">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="font-display text-xl font-medium tracking-tight">Recent Products</CardTitle>
+                  <CardDescription className="mt-1">Latest 5 added</CardDescription>
+                </div>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/admin/products">
+                    View all
+                    <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-1">
+                {recentProducts.length === 0 ? (
+                  <EmptyState title="No products yet." />
+                ) : (
+                  recentProducts.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/admin/products`}
+                      className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface"
+                    >
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border bg-surface">
+                        <Image src={p.image} alt={p.name} fill sizes="36px" className="object-cover" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-foreground">{p.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{p.brand}</div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   )
 }

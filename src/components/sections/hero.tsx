@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, Sparkles, ShieldCheck, Truck, Package } from 'lucide-react'
@@ -24,13 +23,17 @@ const child = {
   },
 }
 
-const STATS = [
-  { icon: ShieldCheck, value: '120+', label: 'Houses' },
-  { icon: Package, value: '1,800+', label: 'Fragrances' },
-  { icon: Truck, value: '100%', label: 'Authentic' },
-]
+interface HeroSectionProps {
+  brandCount?: number
+  productCount?: number
+}
 
-export function HeroSection() {
+export function HeroSection({ brandCount = 0, productCount = 0 }: HeroSectionProps) {
+  const stats = [
+    ...(brandCount > 0 ? [{ icon: ShieldCheck, value: `${brandCount}+`, label: 'Houses' }] : []),
+    ...(productCount > 0 ? [{ icon: Package, value: `${productCount}+`, label: 'Fragrances' }] : []),
+    { icon: Truck, value: '100%', label: 'Authentic' },
+  ]
   const sectionRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -75,8 +78,7 @@ export function HeroSection() {
             className="mt-6 max-w-md text-[15px] leading-relaxed text-muted-foreground sm:text-base"
           >
             A considered edit of authentic fragrances from the world&apos;s
-            finest houses — Dior, Chanel, Tom Ford, Creed, Le Labo and beyond.
-            No noise. Just scent.
+            finest perfume houses. No noise. Just scent.
           </motion.p>
 
           <motion.div
@@ -108,7 +110,7 @@ export function HeroSection() {
             animate="visible"
             className="mt-12 flex flex-wrap gap-3"
           >
-            {STATS.map(({ icon: Icon, value, label }) => (
+            {stats.map(({ icon: Icon, value, label }) => (
               <motion.div
                 key={label}
                 variants={child}
@@ -138,18 +140,19 @@ export function HeroSection() {
           transition={{ duration: 1, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className="relative order-1 aspect-[4/3] lg:order-2 lg:aspect-auto lg:h-[700px]"
         >
+          {/* Abstract, brand-neutral visual — no product photography until
+              real catalog imagery exists (see admin-managed hero banners,
+              Phase 2). */}
           <motion.div
             style={{ y: imageY, scale: imageScale }}
-            className="absolute inset-0"
+            className="absolute inset-0 bg-gradient-to-br from-accent via-surface to-background"
           >
-            <Image
-              src="/images/hero-creed.png"
-              alt="Creed Aventus eau de parfum bottle and box"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-            />
+            <div className="absolute inset-0 opacity-40 [background:radial-gradient(circle_at_30%_20%,theme(colors.brand/25),transparent_55%),radial-gradient(circle_at_75%_65%,theme(colors.brand/15),transparent_50%)]" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="font-display text-[13vw] font-medium italic text-foreground/[0.06] lg:text-[7vw]">
+                The Scent Lab
+              </span>
+            </div>
           </motion.div>
           {/* Gradient overlay for depth */}
           <motion.div

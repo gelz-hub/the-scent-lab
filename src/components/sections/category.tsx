@@ -1,10 +1,11 @@
 'use client'
 
-import { categories } from '@/lib/data'
+import type { CatalogCategory } from '@/lib/catalog'
 import { CategoryCard } from '@/components/site/category-card'
 import { SectionHeading } from '@/components/site/section-heading'
 
-export function CategorySection() {
+export function CategorySection({ categories }: { categories: CatalogCategory[] }) {
+  if (categories.length === 0) return null
   return (
     <section className="section-divider-soft py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -18,7 +19,7 @@ export function CategorySection() {
           {categories.map((cat, i) => (
             <CategoryCard
               key={cat.slug}
-              href={`/${cat.slug}`}
+              href={`/${cat.slug.toLowerCase()}`}
               name={cat.name}
               description={cat.description}
               image={cat.image}

@@ -52,7 +52,7 @@ export default function RegisterPage() {
   }
 
   const handleGoogle = () => {
-    toast.info('Google sign-up is not available in this demo', {
+    toast.info('Google sign-up is not available yet', {
       description: 'Use the form above to continue.',
     })
   }

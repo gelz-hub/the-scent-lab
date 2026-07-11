@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: '%s · The Scent Lab',
   },
   description:
-    'A curated marketplace of authentic perfumes from the world’s finest houses â Dior, Chanel, Tom Ford, Creed, Le Labo, Byredo and more.',
+    'A curated marketplace of authentic perfumes from the world’s finest perfume houses.',
 }
 
 export default function StoreLayout({

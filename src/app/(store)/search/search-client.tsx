@@ -5,16 +5,14 @@ import { useSearchParams } from 'next/navigation'
 import { Search, X, Sparkles, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { products, brands } from '@/lib/data'
-import { formatPrice } from '@/lib/format'
+import type { Product, Brand } from '@/lib/data'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 import { EmptyState } from '@/components/site/empty-state'
-import { StarRating } from '@/components/site/star-rating'
 import { ProductCard } from '@/components/site/product-card'
 
-const POPULAR = ['Woody', 'Floral', 'Fresh', 'Unisex', 'Le Labo', 'Winter', 'Tom Ford', 'Under $150']
+const POPULAR = ['Woody', 'Floral', 'Fresh', 'Unisex', 'Winter', 'Under $150']
 
-export function SearchClient() {
+export function SearchClient({ products, brands }: { products: Product[]; brands: Brand[] }) {
   const searchParams = useSearchParams()
   const initial = searchParams.get('q') ?? ''
   const [query, setQuery] = React.useState(initial)
@@ -134,12 +132,19 @@ export function SearchClient() {
       {hasQuery && (
         <div className="mt-8">
           {!hasResults ? (
-            <EmptyState
-              title={`No results for "${query}"`}
-              description="Try a brand name, a fragrance note, or a fragrance family to discover more."
-              actionLabel="Browse all fragrances"
-              actionHref="/shop"
-            />
+            products.length === 0 && brands.length === 0 ? (
+              <EmptyState
+                title="No products found."
+                description="Our catalog is being updated — check back soon."
+              />
+            ) : (
+              <EmptyState
+                title={`No results for "${query}"`}
+                description="Try a brand name, a fragrance note, or a fragrance family to discover more."
+                actionLabel="Browse all fragrances"
+                actionHref="/shop"
+              />
+            )
           ) : (
             <>
               <p className="mb-6 text-sm text-muted-foreground">

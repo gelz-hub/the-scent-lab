@@ -1,15 +1,24 @@
 import type { Metadata } from 'next'
 import { ProductListing } from '@/components/site/product-listing'
 import { Breadcrumb } from '@/components/site/breadcrumb'
-import { products, type Gender } from '@/lib/data'
+import { EmptyState } from '@/components/site/empty-state'
+import { getProductsByGender, getBrands, getCategories, getCollections } from '@/lib/catalog'
+import type { Gender } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: 'Unisex Perfumes',
   description:
-    'Discover our edit of authentic unisex fragrances — shared scents beyond convention, from Le Labo, Byredo, Tom Ford and beyond.',
+    'Discover our edit of authentic unisex fragrances — shared scents beyond convention.',
 }
 
-export default function UnisexPage() {
+export default async function UnisexPage() {
+  const [products, brands, categories, collections] = await Promise.all([
+    getProductsByGender('Unisex'),
+    getBrands(),
+    getCategories(),
+    getCollections(),
+  ])
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Unisex' }]} />
@@ -21,15 +30,21 @@ export default function UnisexPage() {
           Unisex perfumes
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-          Shared scents that defy category — singular compositions from Le Labo,
-          Byredo, Tom Ford, MFK and more.
+          Shared scents that defy category — singular compositions for anyone.
         </p>
       </div>
-      <ProductListing
-        basePath="/unisex"
-        pageSize={9}
-        baseProducts={products.filter((p) => p.gender === 'Unisex' as Gender)}
-      />
+      {products.length === 0 ? (
+        <EmptyState title="No products available in this category yet." />
+      ) : (
+        <ProductListing
+          basePath="/unisex"
+          pageSize={9}
+          baseProducts={products}
+          allBrands={brands}
+          genderOptions={categories.map((c) => c.name) as Gender[]}
+          collectionOptions={collections.map((c) => c.name)}
+        />
+      )}
     </div>
   )
 }

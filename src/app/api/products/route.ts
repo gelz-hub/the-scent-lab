@@ -6,6 +6,8 @@ import { requirePermission } from '@/lib/rbac/require-permission'
 
 const productSchema = z.object({
   slug: z.string().trim().min(1),
+  sku: z.string().trim().min(1).optional().nullable(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'OUT_OF_STOCK', 'ARCHIVED']).optional(),
   name: z.string().trim().min(1),
   brand: z.string().trim().min(1),
   brandSlug: z.string().trim().min(1),
@@ -66,12 +68,17 @@ export async function GET(req: Request) {
   const category = searchParams.get('category')?.trim().toLowerCase()
   const collection = searchParams.get('collection')?.trim().toLowerCase()
   const status = searchParams.get('status')
+  const visibility = searchParams.get('visibility')
   const availability = searchParams.get('availability')
   const minPrice = searchParams.get('minPrice')
   const maxPrice = searchParams.get('maxPrice')
 
   const products = await db.product.findMany({
-    where: { deletedAt: null, ...(status && { status: status as never }) },
+    where: {
+      deletedAt: null,
+      ...(status && { status: status as never }),
+      ...(visibility && { visibility: visibility as never }),
+    },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -122,6 +129,12 @@ export async function POST(req: Request) {
   const existing = await db.product.findUnique({ where: { slug: parsed.data.slug } })
   if (existing) {
     return NextResponse.json({ error: 'A product with this slug already exists.' }, { status: 409 })
+  }
+  if (parsed.data.sku) {
+    const existingSku = await db.product.findUnique({ where: { sku: parsed.data.sku } })
+    if (existingSku) {
+      return NextResponse.json({ error: 'A product with this SKU already exists.' }, { status: 409 })
+    }
   }
 
   const product = await db.product.create({ data: parsed.data })

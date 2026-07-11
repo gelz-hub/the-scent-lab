@@ -1,6 +1,5 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { products } from '../src/lib/data'
 
 const db = new PrismaClient()
 
@@ -41,41 +40,7 @@ async function main() {
     },
   })
 
-  for (const p of products) {
-    await db.product.upsert({
-      where: { slug: p.slug },
-      update: {},
-      create: {
-        slug: p.slug,
-        name: p.name,
-        brand: p.brand,
-        brandSlug: p.brandSlug,
-        gender: p.gender,
-        category: p.category,
-        collection: p.collection,
-        image: p.image,
-        gallery: p.gallery,
-        volumes: p.volumes as unknown as Prisma.InputJsonValue,
-        compareAtPrice: p.compareAtPrice ?? null,
-        rating: p.rating,
-        reviewCount: p.reviewCount,
-        description: p.description,
-        story: p.story,
-        notes: p.notes as unknown as Prisma.InputJsonValue,
-        longevity: p.longevity,
-        projection: p.projection,
-        sillage: p.sillage,
-        seasons: p.seasons,
-        occasions: p.occasions,
-        country: p.country,
-        year: p.year,
-        tags: p.tags,
-        stock: p.stock,
-      },
-    })
-  }
-
-  console.log(`Seeded ${products.length} products and 3 users (admin/staff/customer).`)
+  console.log('Seeded 3 users (admin/staff/customer). Catalog data (products, brands, categories, collections) is managed entirely through the admin panel — this script no longer seeds demo products.')
 }
 
 main()

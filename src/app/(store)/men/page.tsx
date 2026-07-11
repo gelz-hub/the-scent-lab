@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { ProductListing } from '@/components/site/product-listing'
 import { Breadcrumb } from '@/components/site/breadcrumb'
-import { products, type Gender } from '@/lib/data'
+import { EmptyState } from '@/components/site/empty-state'
+import { getProductsByGender, getBrands, getCategories, getCollections } from '@/lib/catalog'
+import type { Gender } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: "Men's Perfumes",
@@ -9,7 +11,14 @@ export const metadata: Metadata = {
     "Discover our edit of authentic men's fragrances — woody, aromatic and boldly contemporary scents from the world's finest houses.",
 }
 
-export default function MenPage() {
+export default async function MenPage() {
+  const [products, brands, categories, collections] = await Promise.all([
+    getProductsByGender('Men'),
+    getBrands(),
+    getCategories(),
+    getCollections(),
+  ])
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Men' }]} />
@@ -22,14 +31,21 @@ export default function MenPage() {
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
           Woody, aromatic and boldly contemporary — distinguished scents from
-          Dior, Chanel, Creed, Hermès and more.
+          the world's finest perfume houses.
         </p>
       </div>
-      <ProductListing
-        basePath="/men"
-        pageSize={9}
-        baseProducts={products.filter((p) => p.gender === 'Men' as Gender)}
-      />
+      {products.length === 0 ? (
+        <EmptyState title="No products available in this category yet." />
+      ) : (
+        <ProductListing
+          basePath="/men"
+          pageSize={9}
+          baseProducts={products}
+          allBrands={brands}
+          genderOptions={categories.map((c) => c.name) as Gender[]}
+          collectionOptions={collections.map((c) => c.name)}
+        />
+      )}
     </div>
   )
 }

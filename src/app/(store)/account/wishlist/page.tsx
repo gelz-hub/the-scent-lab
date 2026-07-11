@@ -4,19 +4,46 @@ import * as React from 'react'
 import Link from 'next/link'
 import { Share2, Heart } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { products } from '@/lib/data'
+import type { Product } from '@/lib/data'
 import { ProductCard } from '@/components/site/product-card'
 import { EmptyState } from '@/components/site/empty-state'
 import { toast } from 'sonner'
 
 export default function WishlistPage() {
   const wishlist = useStore((s) => s.wishlist)
+  const hydrateWishlist = useStore((s) => s.hydrateWishlist)
   const [mounted, setMounted] = React.useState(false)
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [productsLoaded, setProductsLoaded] = React.useState(false)
 
   // Avoid hydration mismatch — wishlist is persisted client-side.
   React.useEffect(() => setMounted(true), [])
 
+  React.useEffect(() => {
+    fetch('/api/products?status=ACTIVE&visibility=PUBLIC')
+      .then((res) => res.json())
+      .then((data: { products?: Product[] }) => {
+        setProducts(data.products ?? [])
+        setProductsLoaded(true)
+      })
+      .catch(() => {})
+  }, [])
+
   const items = products.filter((p) => wishlist.includes(p.id))
+
+  // Prune wishlist entries that no longer resolve to a real, public product
+  // (e.g. deleted from admin) so stale ids don't linger forever. Checks
+  // productsLoaded (not products.length) so a genuinely empty catalog still
+  // clears a stale wishlist instead of being mistaken for "still loading".
+  React.useEffect(() => {
+    if (!productsLoaded || wishlist.length === 0) return
+    const validIds = new Set(products.map((p) => p.id))
+    const stale = wishlist.filter((id) => !validIds.has(id))
+    if (stale.length > 0) {
+      hydrateWishlist(wishlist.filter((id) => validIds.has(id)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsLoaded, products])
 
   const handleShare = async () => {
     const url =

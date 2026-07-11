@@ -3,16 +3,7 @@
 import * as React from 'react'
 import { motion } from 'framer-motion'
 import { SlidersHorizontal, Search, X, Check, ChevronDown } from 'lucide-react'
-import {
-  products,
-  brands,
-  allCategories,
-  allCollections,
-  priceRange,
-  type Gender,
-  type CollectionTag,
-  type Product,
-} from '@/lib/data'
+import type { Gender, Product, Brand } from '@/lib/data'
 import { ProductCard } from '@/components/site/product-card'
 import { Pagination } from '@/components/site/pagination'
 import { EmptyState } from '@/components/site/empty-state'
@@ -37,9 +28,6 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: 'newest', label: 'Newest' },
 ]
 
-const PR = priceRange()
-const MAX_PRICE = Math.ceil(PR.max / 50) * 50
-
 function cheapestPrice(p: Product) {
   return Math.min(...p.volumes.map((v) => v.price))
 }
@@ -47,38 +35,57 @@ function cheapestPrice(p: Product) {
 interface FilterState {
   genders: Set<Gender>
   brandSlugs: Set<string>
-  collections: Set<CollectionTag>
+  collections: Set<string>
   maxPrice: number
 }
 
-const DEFAULT_FILTERS: FilterState = {
-  genders: new Set(),
-  brandSlugs: new Set(),
-  collections: new Set(),
-  maxPrice: MAX_PRICE,
-}
-
 interface ProductListingProps {
-  /** Pre-filter the product pool (e.g. by gender or tag) */
-  baseProducts?: Product[]
-  /** Lock gender filter to a single value (gender pages) */
-  lockGender?: Gender
+  /** The full product pool this listing draws from (already DB-filtered by the page, e.g. by gender or tag) */
+  baseProducts: Product[]
+  /** Brands available for the brand filter (with productCount already computed) */
+  allBrands: Brand[]
+  /** Gender values available for the gender filter */
+  genderOptions: Gender[]
+  /** Collection tag values available for the collection filter */
+  collectionOptions: string[]
   basePath: string
   pageSize?: number
   showSearch?: boolean
 }
 
 export function ProductListing({
-  baseProducts = products,
+  baseProducts,
+  allBrands,
+  genderOptions,
+  collectionOptions,
   basePath,
   pageSize = 9,
   showSearch = true,
 }: ProductListingProps) {
+  const brands = allBrands
+  const PR = React.useMemo(() => {
+    const all = baseProducts.flatMap((p) => p.volumes.map((v) => v.price))
+    if (all.length === 0) return { min: 0, max: 0 }
+    return { min: Math.min(...all), max: Math.max(...all) }
+  }, [baseProducts])
+  const MAX_PRICE = Math.max(50, Math.ceil(PR.max / 50) * 50)
+
   const [query, setQuery] = React.useState('')
   const [sort, setSort] = React.useState<SortKey>('featured')
   const [page, setPage] = React.useState(1)
   const [mobileOpen, setMobileOpen] = React.useState(false)
-  const [state, setState] = React.useState<FilterState>(DEFAULT_FILTERS)
+  const [state, setState] = React.useState<FilterState>({
+    genders: new Set(),
+    brandSlugs: new Set(),
+    collections: new Set(),
+    maxPrice: MAX_PRICE,
+  })
+
+  // Keep the price ceiling in sync if baseProducts changes after mount
+  React.useEffect(() => {
+    setState((s) => (s.maxPrice === MAX_PRICE ? s : { ...s, maxPrice: MAX_PRICE }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [MAX_PRICE])
 
   const activeCount =
     state.genders.size + state.brandSlugs.size + state.collections.size +
@@ -138,7 +145,7 @@ export function ProductListing({
   }, [state, sort, query])
 
   const clearAll = () => {
-    setState(DEFAULT_FILTERS)
+    setState({ genders: new Set(), brandSlugs: new Set(), collections: new Set(), maxPrice: MAX_PRICE })
     setQuery('')
   }
 
@@ -181,7 +188,16 @@ export function ProductListing({
               )}
             </SheetHeader>
             <div className="p-5">
-              <FilterPanel state={state} setState={setState} toggle={toggle} />
+              <FilterPanel
+                state={state}
+                setState={setState}
+                toggle={toggle}
+                brands={brands}
+                genderOptions={genderOptions}
+                collectionOptions={collectionOptions}
+                priceMin={PR.min}
+                maxPrice={MAX_PRICE}
+              />
             </div>
           </SheetContent>
         </Sheet>
@@ -201,7 +217,16 @@ export function ProductListing({
               </button>
             )}
           </div>
-          <FilterPanel state={state} setState={setState} toggle={toggle} />
+          <FilterPanel
+            state={state}
+            setState={setState}
+            toggle={toggle}
+            brands={brands}
+            genderOptions={genderOptions}
+            collectionOptions={collectionOptions}
+            priceMin={PR.min}
+            maxPrice={MAX_PRICE}
+          />
         </div>
       </aside>
 
@@ -319,65 +344,81 @@ function FilterPanel({
   state,
   setState,
   toggle,
+  brands,
+  genderOptions,
+  collectionOptions,
+  priceMin,
+  maxPrice,
 }: {
   state: FilterState
   setState: React.Dispatch<React.SetStateAction<FilterState>>
   toggle: <T>(set: Set<T>, v: T) => Set<T>
+  brands: Brand[]
+  genderOptions: Gender[]
+  collectionOptions: string[]
+  priceMin: number
+  maxPrice: number
 }) {
   return (
     <div className="space-y-7">
       {/* Gender */}
-      <FilterGroup title="Gender">
-        {allCategories.map((g) => (
-          <CheckRow
-            key={g}
-            checked={state.genders.has(g)}
-            onChange={() => setState((s) => ({ ...s, genders: toggle(s.genders, g) }))}
-            label={g}
-          />
-        ))}
-      </FilterGroup>
-
-      {/* Collection */}
-      <FilterGroup title="Collection">
-        {allCollections.map((c) => (
-          <CheckRow
-            key={c}
-            checked={state.collections.has(c)}
-            onChange={() => setState((s) => ({ ...s, collections: toggle(s.collections, c) }))}
-            label={c}
-          />
-        ))}
-      </FilterGroup>
-
-      {/* Brand */}
-      <FilterGroup title="Brand">
-        <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
-          {brands.map((b) => (
+      {genderOptions.length > 0 && (
+        <FilterGroup title="Gender">
+          {genderOptions.map((g) => (
             <CheckRow
-              key={b.slug}
-              checked={state.brandSlugs.has(b.slug)}
-              onChange={() => setState((s) => ({ ...s, brandSlugs: toggle(s.brandSlugs, b.slug) }))}
-              label={b.name}
-              meta={String(b.productCount)}
+              key={g}
+              checked={state.genders.has(g)}
+              onChange={() => setState((s) => ({ ...s, genders: toggle(s.genders, g) }))}
+              label={g}
             />
           ))}
-        </div>
-      </FilterGroup>
+        </FilterGroup>
+      )}
+
+      {/* Collection */}
+      {collectionOptions.length > 0 && (
+        <FilterGroup title="Collection">
+          {collectionOptions.map((c) => (
+            <CheckRow
+              key={c}
+              checked={state.collections.has(c)}
+              onChange={() => setState((s) => ({ ...s, collections: toggle(s.collections, c) }))}
+              label={c}
+            />
+          ))}
+        </FilterGroup>
+      )}
+
+      {/* Brand */}
+      {brands.length > 0 && (
+        <FilterGroup title="Brand">
+          <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
+            {brands.map((b) => (
+              <CheckRow
+                key={b.slug}
+                checked={state.brandSlugs.has(b.slug)}
+                onChange={() => setState((s) => ({ ...s, brandSlugs: toggle(s.brandSlugs, b.slug) }))}
+                label={b.name}
+                meta={String(b.productCount)}
+              />
+            ))}
+          </div>
+        </FilterGroup>
+      )}
 
       {/* Price */}
       <FilterGroup title="Max Price">
         <div className="px-1">
           <Slider
             value={[state.maxPrice]}
-            min={PR.min}
-            max={MAX_PRICE}
+            min={priceMin}
+            max={maxPrice}
             step={10}
             onValueChange={(v) => setState((s) => ({ ...s, maxPrice: v[0] }))}
             className="mt-3"
           />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-            <span>{formatPrice(PR.min)}</span>
+            <span>{formatPrice(priceMin)}</span>
             <span className="font-medium text-foreground">
               {formatPrice(state.maxPrice)}
             </span>

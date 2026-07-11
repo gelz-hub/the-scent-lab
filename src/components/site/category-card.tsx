@@ -8,7 +8,7 @@ interface CategoryCardProps {
   href: string
   name: string
   description: string
-  image: string
+  image: string | null
   index?: number
   size?: 'default' | 'large'
 }
@@ -35,13 +35,17 @@ export function CategoryCard({
           size === 'large' ? 'aspect-[4/5]' : 'aspect-[4/5]',
         )}
       >
-        <Image
-          src={image}
-          alt={name}
-          fill
-          sizes="(max-width: 768px) 100vw, 33vw"
-          className="object-contain p-8 transition-transform duration-700 ease-out-expo group-hover:scale-[1.08]"
-        />
+        {image ? (
+          <Image
+            src={image}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-contain p-8 transition-transform duration-700 ease-out-expo group-hover:scale-[1.08]"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-surface to-border" />
+        )}
         {/* Deeper gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/15 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-6">

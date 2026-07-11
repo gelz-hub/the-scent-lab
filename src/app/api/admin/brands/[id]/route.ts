@@ -14,6 +14,9 @@ const updateSchema = z.object({
   description: z.string().trim().max(2000).optional(),
   logoPublicId: z.string().optional(),
   logoUrl: z.string().optional(),
+  tagline: z.string().trim().max(200).optional(),
+  country: z.string().trim().max(100).optional(),
+  foundedYear: z.number().int().min(1000).max(9999).optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE', 'HIDDEN']).optional(),
 })
 

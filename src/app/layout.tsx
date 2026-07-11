@@ -37,20 +37,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "The Scent Lab — Curated Fragrances. Authentic Brands.",
   description:
-    "The Scent Lab is a curated online retailer of authentic perfumes from the world's finest houses — Dior, Chanel, Tom Ford, Creed, Le Labo, Byredo and more. Discover your signature scent.",
+    "The Scent Lab is a curated online retailer of authentic perfumes from the world's finest perfume houses. Discover your signature scent.",
   keywords: [
     "perfume",
     "fragrance",
     "cologne",
     "eau de parfum",
-    "Dior",
-    "Chanel",
-    "Tom Ford",
-    "Creed",
-    "Le Labo",
-    "Byredo",
     "niche perfume",
     "luxury fragrance",
+    "authentic perfume",
   ],
   authors: [{ name: "The Scent Lab" }],
   alternates: {

@@ -6,27 +6,46 @@ import { FeatureBanner } from '@/components/sections/feature-banner'
 import { CollectionSection } from '@/components/sections/collections'
 import { ReviewsSection } from '@/components/sections/reviews'
 import { JournalSection } from '@/components/sections/journal'
-import { InstagramSection } from '@/components/sections/instagram'
 import { NewsletterSection } from '@/components/sections/newsletter'
+import {
+  getProductCount,
+  getProductsByTag,
+  getBrands,
+  getCategories,
+  getCollections,
+  getFeaturedReviews,
+} from '@/lib/catalog'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [productCount, newArrivals, bestSellers, trending, brands, categories, collections, reviews] =
+    await Promise.all([
+      getProductCount(),
+      getProductsByTag('New'),
+      getProductsByTag('Bestseller'),
+      getProductsByTag('Trending'),
+      getBrands(),
+      getCategories(),
+      getCollections(),
+      getFeaturedReviews(),
+    ])
+
   return (
     <>
       {/* ── 1. Hero ────────────────────────────────── */}
-      <HeroSection />
+      <HeroSection brandCount={brands.length} productCount={productCount} />
 
       {/* ── 2. Brand trust bar ──────────────────────── */}
-      <BrandMarquee />
+      <BrandMarquee brands={brands} />
 
       {/* ── 3. Category discovery ───────────────────── */}
-      <CategorySection />
+      <CategorySection categories={categories} />
 
       {/* ── 4. New arrivals ─────────────────────────── */}
       <ProductGridSection
         eyebrow="Just landed"
         title="New arrivals"
         description="The latest additions to our edit, freshly stocked."
-        tag="New"
+        products={newArrivals}
         limit={4}
         action={{ label: 'Shop all new', href: '/new-arrivals' }}
       />
@@ -36,7 +55,7 @@ export default function HomePage() {
         eyebrow="Loved by many"
         title="Best sellers"
         description="The fragrances our customers reach for, again and again."
-        tag="Bestseller"
+        products={bestSellers}
         limit={4}
         action={{ label: 'View all', href: '/best-sellers' }}
       />
@@ -45,28 +64,25 @@ export default function HomePage() {
       <FeatureBanner />
 
       {/* ── 7. Curated collections ──────────────────── */}
-      <CollectionSection />
+      <CollectionSection collections={collections} />
 
       {/* ── 8. Trending ─────────────────────────────── */}
       <ProductGridSection
         eyebrow="On the rise"
         title="Trending this week"
         description="The scents everyone is talking about right now."
-        tag="Trending"
+        products={trending}
         limit={4}
         action={{ label: 'Shop trending', href: '/shop' }}
       />
 
       {/* ── 9. Social proof ─────────────────────────── */}
-      <ReviewsSection />
+      <ReviewsSection reviews={reviews} />
 
       {/* ── 10. Journal ─────────────────────────────── */}
       <JournalSection />
 
-      {/* ── 11. Instagram gallery ───────────────────── */}
-      <InstagramSection />
-
-      {/* ── 12. Newsletter ──────────────────────────── */}
+      {/* ── 11. Newsletter ──────────────────────────── */}
       <NewsletterSection />
     </>
   )

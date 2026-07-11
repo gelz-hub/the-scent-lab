@@ -1,15 +1,18 @@
 import type { Metadata } from 'next'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 import { BrandCard } from '@/components/site/brand-card'
-import { brands } from '@/lib/data'
+import { EmptyState } from '@/components/site/empty-state'
+import { getBrands } from '@/lib/catalog'
 
 export const metadata: Metadata = {
   title: 'All Brands',
   description:
-    'Discover every fragrance house we carry — from heritage maisons like Chanel and Dior to niche ateliers like Le Labo and Byredo.',
+    'Discover every fragrance house we carry — from heritage maisons to independent niche ateliers.',
 }
 
-export default function BrandsPage() {
+export default async function BrandsPage() {
+  const brands = await getBrands()
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Brands' }]} />
@@ -26,11 +29,15 @@ export default function BrandsPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {brands.map((brand, i) => (
-          <BrandCard key={brand.slug} brand={brand} index={i} />
-        ))}
-      </div>
+      {brands.length === 0 ? (
+        <EmptyState title="No brands available." />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {brands.map((brand, i) => (
+            <BrandCard key={brand.slug} brand={brand} index={i} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

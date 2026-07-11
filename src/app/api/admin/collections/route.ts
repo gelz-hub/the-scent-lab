@@ -18,6 +18,8 @@ const createSchema = z.object({
   name: z.string().trim().min(1),
   slug: z.string().trim().min(1),
   description: z.string().trim().max(2000).optional(),
+  tagline: z.string().trim().max(200).optional(),
+  imageUrl: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE', 'HIDDEN']).optional(),
 })
 

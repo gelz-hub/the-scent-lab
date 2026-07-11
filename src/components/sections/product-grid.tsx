@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { products, type Product } from '@/lib/data'
+import type { Product } from '@/lib/data'
 import { ProductCard } from '@/components/site/product-card'
 import { SectionHeading } from '@/components/site/section-heading'
 
@@ -10,7 +10,7 @@ interface ProductGridSectionProps {
   eyebrow: string
   title: string
   description?: string
-  tag?: Product['tags'][number]
+  products: Product[]
   limit?: number
   action?: { label: string; href: string }
   className?: string
@@ -21,14 +21,13 @@ export function ProductGridSection({
   eyebrow,
   title,
   description,
-  tag,
+  products,
   limit,
   action,
   className,
 }: ProductGridSectionProps) {
-  let list = products
-  if (tag) list = list.filter((p) => p.tags.includes(tag))
-  if (limit) list = list.slice(0, limit)
+  const list = limit ? products.slice(0, limit) : products
+  if (list.length === 0) return null
 
   return (
     <section

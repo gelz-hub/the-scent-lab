@@ -52,7 +52,7 @@ function LoginForm() {
   }
 
   const handleGoogle = () => {
-    toast.info('Google sign-in is not available in this demo', {
+    toast.info('Google sign-in is not available yet', {
       description: 'Use email + password to continue.',
     })
   }

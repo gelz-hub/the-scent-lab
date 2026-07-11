@@ -1,6 +1,10 @@
 export interface AdminProduct {
   id: string
   slug: string
+  sku?: string | null
+  status?: 'DRAFT' | 'ACTIVE' | 'OUT_OF_STOCK' | 'ARCHIVED'
+  createdAt?: string
+  updatedAt?: string
   name: string
   brand: string
   brandSlug: string

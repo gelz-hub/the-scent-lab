@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { brands } from '@/lib/data'
+import type { Brand } from '@/lib/data'
 
-export function BrandMarquee() {
+export function BrandMarquee({ brands }: { brands: Brand[] }) {
+  if (brands.length === 0) return null
   const list = [...brands, ...brands]
   return (
     <section className="border-b border-border bg-surface/40 py-12">

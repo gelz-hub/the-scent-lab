@@ -8,8 +8,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Heart, ShoppingBag, X, Share2 } from 'lucide-react'
+import * as React from 'react'
 import { useStore } from '@/lib/store'
-import { products } from '@/lib/data'
+import type { Product } from '@/lib/data'
 import { formatPrice } from '@/lib/format'
 import { toast } from 'sonner'
 import { StarRating } from './star-rating'
@@ -19,9 +20,39 @@ export function WishlistSheet() {
   const open = useStore((s) => s.wishlistOpen)
   const setOpen = useStore((s) => s.setWishlistOpen)
   const toggleWishlist = useStore((s) => s.toggleWishlist)
+  const hydrateWishlist = useStore((s) => s.hydrateWishlist)
   const addToCart = useStore((s) => s.addToCart)
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [productsLoaded, setProductsLoaded] = React.useState(false)
+  const loaded = React.useRef(false)
+
+  React.useEffect(() => {
+    if (!open || loaded.current) return
+    loaded.current = true
+    fetch('/api/products?status=ACTIVE&visibility=PUBLIC')
+      .then((res) => res.json())
+      .then((data: { products?: Product[] }) => {
+        setProducts(data.products ?? [])
+        setProductsLoaded(true)
+      })
+      .catch(() => {})
+  }, [open])
 
   const items = products.filter((p) => wishlist.includes(p.id))
+
+  // Prune wishlist entries whose product no longer exists/is no longer
+  // public (e.g. deleted from admin) once we know the real catalog — even
+  // an empty catalog is a valid "known state" that should clear a stale
+  // wishlist, so this checks productsLoaded rather than products.length.
+  React.useEffect(() => {
+    if (!productsLoaded || wishlist.length === 0) return
+    const validIds = new Set(products.map((p) => p.id))
+    const stale = wishlist.filter((id) => !validIds.has(id))
+    if (stale.length > 0) {
+      hydrateWishlist(wishlist.filter((id) => validIds.has(id)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsLoaded, products])
 
   const handleShare = async () => {
     try {

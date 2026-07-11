@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
         const forwardedFor = req.headers?.['x-forwarded-for']
         const ip = (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)?.split(',')[0].trim() ?? 'unknown'
         const key = `login:${ip}:${credentials.email.toLowerCase()}`
-        const { allowed } = rateLimit(key, 10, 5 * 60 * 1000)
+        const { allowed } = await rateLimit(key, 10, 5 * 60 * 1000)
         if (!allowed) {
           logger.warn('auth', 'login_rate_limited', { email: credentials.email.toLowerCase(), ip })
           return null

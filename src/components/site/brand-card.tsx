@@ -21,12 +21,16 @@ export function BrandCard({ brand, index = 0 }: { brand: Brand; index?: number }
         <h3 className="font-display text-2xl font-medium tracking-tight transition-colors group-hover:text-brand">
           {brand.name}
         </h3>
-        <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-          {brand.country} · est. {brand.founded}
-        </p>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {brand.tagline}
-        </p>
+        {(brand.country || brand.founded > 0) && (
+          <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+            {[brand.country, brand.founded > 0 ? `est. ${brand.founded}` : null].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {brand.tagline && (
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            {brand.tagline}
+          </p>
+        )}
         <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-foreground">
           {brand.productCount} {brand.productCount === 1 ? 'fragrance' : 'fragrances'}
           <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" strokeWidth={1.5} />

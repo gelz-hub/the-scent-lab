@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { ProductListing } from '@/components/site/product-listing'
 import { Breadcrumb } from '@/components/site/breadcrumb'
-import { products, type Gender } from '@/lib/data'
+import { EmptyState } from '@/components/site/empty-state'
+import { getProductsByGender, getBrands, getCategories, getCollections } from '@/lib/catalog'
+import type { Gender } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: "Women's Perfumes",
@@ -9,7 +11,14 @@ export const metadata: Metadata = {
     "Discover our edit of authentic women's fragrances — florals, orientals and modern signatures from the world's finest houses.",
 }
 
-export default function WomenPage() {
+export default async function WomenPage() {
+  const [products, brands, categories, collections] = await Promise.all([
+    getProductsByGender('Women'),
+    getBrands(),
+    getCategories(),
+    getCollections(),
+  ])
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Women' }]} />
@@ -22,14 +31,21 @@ export default function WomenPage() {
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
           Florals, orientals and modern signatures — the most beautiful scents
-          from Chanel, Dior, YSL, Prada and beyond.
+          from the world's finest perfume houses.
         </p>
       </div>
-      <ProductListing
-        basePath="/women"
-        pageSize={9}
-        baseProducts={products.filter((p) => p.gender === 'Women' as Gender)}
-      />
+      {products.length === 0 ? (
+        <EmptyState title="No products available in this category yet." />
+      ) : (
+        <ProductListing
+          basePath="/women"
+          pageSize={9}
+          baseProducts={products}
+          allBrands={brands}
+          genderOptions={categories.map((c) => c.name) as Gender[]}
+          collectionOptions={collections.map((c) => c.name)}
+        />
+      )}
     </div>
   )
 }

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   // rapid retries after a failed payment, but blocks scripted checkout spam
   // (each order create also triggers a payment-provider call, so this
   // doubles as a throttle on outbound provider traffic).
-  const { allowed } = rateLimit(`order-create:${session.user.id}:${clientIp(req)}`, 20, 10 * 60 * 1000)
+  const { allowed } = await rateLimit(`order-create:${session.user.id}:${clientIp(req)}`, 20, 10 * 60 * 1000)
   if (!allowed) {
     return NextResponse.json({ error: 'Too many orders placed recently. Please wait a few minutes and try again.' }, { status: 429 })
   }

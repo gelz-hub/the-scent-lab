@@ -11,23 +11,38 @@ import {
 } from '@/components/ui/dialog'
 import { Search, X, ArrowRight, Sparkles } from 'lucide-react'
 import { useStore } from '@/lib/store'
-import { products, brands } from '@/lib/data'
+import type { Product, Brand } from '@/lib/data'
 import { formatPrice } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { StarRating } from './star-rating'
 
-const SUGGESTIONS = ['Woody', 'Floral', 'Fresh', 'Unisex', 'Le Labo', 'Under $150', 'Winter']
+const SUGGESTIONS = ['Woody', 'Floral', 'Fresh', 'Unisex', 'Under $150', 'Winter']
 
 export function SearchDialog() {
   const open = useStore((s) => s.searchOpen)
   const setOpen = useStore((s) => s.setSearchOpen)
   const router = useRouter()
   const [q, setQ] = React.useState('')
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [brands, setBrands] = React.useState<Brand[]>([])
+  const loaded = React.useRef(false)
 
   React.useEffect(() => {
     if (!open) {
       setQ('')
+      return
     }
+    if (loaded.current) return
+    loaded.current = true
+    Promise.all([
+      fetch('/api/products?status=ACTIVE&visibility=PUBLIC').then((r) => r.json()),
+      fetch('/api/brands').then((r) => r.json()),
+    ])
+      .then(([productData, brandData]: [{ products?: Product[] }, { brands?: Brand[] }]) => {
+        setProducts(productData.products ?? [])
+        setBrands(brandData.brands ?? [])
+      })
+      .catch(() => {})
   }, [open])
 
   const query = q.trim().toLowerCase()
@@ -202,10 +217,21 @@ export function SearchDialog() {
           {/* Empty */}
           {showEmpty && (
             <div className="px-4 py-10 text-center">
-              <p className="font-display text-lg">No results for "{q}"</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Try a brand name, a note, or a fragrance family.
-              </p>
+              {products.length === 0 && brands.length === 0 ? (
+                <>
+                  <p className="font-display text-lg">No products found.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Our catalog is being updated — check back soon.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-lg">No results for "{q}"</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try a brand name, a note, or a fragrance family.
+                  </p>
+                </>
+              )}
             </div>
           )}
 

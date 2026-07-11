@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { ProductListing } from '@/components/site/product-listing'
 import { Breadcrumb } from '@/components/site/breadcrumb'
+import { EmptyState } from '@/components/site/empty-state'
+import { getProducts, getBrands, getCategories, getCollections } from '@/lib/catalog'
+import type { Gender } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: 'Shop All Fragrances',
@@ -8,7 +11,14 @@ export const metadata: Metadata = {
     'Browse our complete edit of authentic perfumes from the world’s finest houses. Filter by brand, collection, gender and price.',
 }
 
-export default function ShopPage() {
+export default async function ShopPage() {
+  const [products, brands, categories, collections] = await Promise.all([
+    getProducts(),
+    getBrands(),
+    getCategories(),
+    getCollections(),
+  ])
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Shop' }]} />
@@ -24,7 +34,18 @@ export default function ShopPage() {
           family, gender or price to find your next signature.
         </p>
       </div>
-      <ProductListing basePath="/shop" pageSize={9} />
+      {products.length === 0 ? (
+        <EmptyState title="No products available yet." />
+      ) : (
+        <ProductListing
+          basePath="/shop"
+          pageSize={9}
+          baseProducts={products}
+          allBrands={brands}
+          genderOptions={categories.map((c) => c.name) as Gender[]}
+          collectionOptions={collections.map((c) => c.name)}
+        />
+      )}
     </div>
   )
 }

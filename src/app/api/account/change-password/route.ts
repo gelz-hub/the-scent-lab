@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
   // 5 attempts / 15 minutes / account — guards against someone with a
   // stolen session cookie brute-forcing the current-password check.
-  const { allowed } = rateLimit(`change-password:${session.user.id}:${clientIp(req)}`, 5, 15 * 60 * 1000)
+  const { allowed } = await rateLimit(`change-password:${session.user.id}:${clientIp(req)}`, 5, 15 * 60 * 1000)
   if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 })
 
   const parsed = schema.safeParse(await req.json().catch(() => null))

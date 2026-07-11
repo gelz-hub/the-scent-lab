@@ -1,15 +1,24 @@
 import type { Metadata } from 'next'
 import { ProductListing } from '@/components/site/product-listing'
 import { Breadcrumb } from '@/components/site/breadcrumb'
-import { products } from '@/lib/data'
+import { EmptyState } from '@/components/site/empty-state'
+import { getProductsByTag, getBrands, getCategories, getCollections } from '@/lib/catalog'
+import type { Gender } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: 'New Arrivals',
   description:
-    'The latest additions to our edit â freshly stocked fragrances from the world’s finest houses.',
+    'The latest additions to our edit — freshly stocked fragrances from the world’s finest houses.',
 }
 
-export default function NewArrivalsPage() {
+export default async function NewArrivalsPage() {
+  const [products, brands, categories, collections] = await Promise.all([
+    getProductsByTag('New'),
+    getBrands(),
+    getCategories(),
+    getCollections(),
+  ])
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'New Arrivals' }]} />
@@ -24,11 +33,18 @@ export default function NewArrivalsPage() {
           The latest additions to our edit — freshly stocked and ready to discover.
         </p>
       </div>
-      <ProductListing
-        basePath="/new-arrivals"
-        pageSize={9}
-        baseProducts={products.filter((p) => p.tags.includes('New'))}
-      />
+      {products.length === 0 ? (
+        <EmptyState title="No products available yet." />
+      ) : (
+        <ProductListing
+          basePath="/new-arrivals"
+          pageSize={9}
+          baseProducts={products}
+          allBrands={brands}
+          genderOptions={categories.map((c) => c.name) as Gender[]}
+          collectionOptions={collections.map((c) => c.name)}
+        />
+      )}
     </div>
   )
 }

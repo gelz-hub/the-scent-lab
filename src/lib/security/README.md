@@ -34,13 +34,16 @@ not a bug.
 
 ## Rate limiting
 
-`rate-limit.ts` is an in-process, single-instance sliding-window limiter
-(`Map<key, {count, windowStart}>`), the same "documented interim
-implementation, swap later" pattern as `src/lib/analytics/cache.ts`. It is
-**not safe across multiple server instances** — each instance has its own
-counters. Swapping to Redis/Upstash means reimplementing `rateLimit()`'s
-body only; every call site (`rateLimit(key, limit, windowMs)`) stays the
-same.
+`rate-limit.ts` is a distributed sliding-window limiter backed by Upstash
+Redis (`@upstash/ratelimit` + `@upstash/redis`), safe across multiple
+server instances — set `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`
+(via the Vercel Marketplace "Upstash" integration, or directly at
+upstash.com) in every environment. `rateLimit()` is now `async` —
+every call site does `await rateLimit(key, limit, windowMs)`. If those env
+vars are absent (e.g. local dev without Upstash provisioned), it falls back
+to a single-instance in-process `Map` bucket so the app still runs without
+requiring cloud credentials for every contributor — **never rely on that
+fallback in production.**
 
 Applied to:
 | Endpoint | Limit | Key |

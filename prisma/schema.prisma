@@ -682,6 +682,12 @@ model Product {
   // ProductVariant), never this field. Kept so existing storefront
   // "in stock" badges keep working unmodified.
   stock          Int    @default(0)
+  // Same legacy-simplicity rationale as `stock` above: the simple admin
+  // product form (src/components/admin/product-form-dialog.tsx) doesn't
+  // create ProductVariant rows, so it needs its own SKU slot rather than
+  // the "real" one on ProductVariant.sku used by the full variant/
+  // inventory system. Optional/unique so existing products are unaffected.
+  sku            String? @unique
 
   // --- Part 6 additions (all optional/defaulted — nothing above changes) ---
   // Deliberately NO sku/barcode/price/costPrice/weight/volume/stock here —
@@ -726,6 +732,11 @@ model Brand {
   logoPublicId String?
   logoUrl      String?
   description  String?           @db.Text
+  // Storefront display copy — optional so existing rows keep working;
+  // populated from the admin catalog screen.
+  tagline      String?
+  country      String?
+  foundedYear  Int?
   visibility   ProductVisibility @default(PUBLIC)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
@@ -738,6 +749,7 @@ model Category {
   name        String
   slug        String            @unique
   description String?           @db.Text
+  imageUrl    String?
   visibility  ProductVisibility @default(PUBLIC)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -750,6 +762,8 @@ model Collection {
   name        String
   slug        String            @unique
   description String?           @db.Text
+  tagline     String?
+  imageUrl    String?
   visibility  ProductVisibility @default(PUBLIC)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt

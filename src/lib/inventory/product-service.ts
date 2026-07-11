@@ -371,38 +371,47 @@ export async function reorderProductImages(productId: string, orderedImageIds: s
 export async function listBrands() {
   return db.brand.findMany({ orderBy: { name: 'asc' } })
 }
-export async function createBrand(data: { name: string; slug: string; description?: string; logoPublicId?: string; logoUrl?: string; visibility?: ProductVisibility }) {
-  return db.brand.create({ data })
+export async function createBrand(data: { name: string; slug: string; description?: string; logoPublicId?: string; logoUrl?: string; tagline?: string; country?: string; foundedYear?: number; visibility?: ProductVisibility }) {
+  const brand = await db.brand.create({ data })
+  return brand
 }
-export async function updateBrand(id: string, data: Partial<{ name: string; slug: string; description: string; logoPublicId: string; logoUrl: string; visibility: ProductVisibility }>) {
-  return db.brand.update({ where: { id }, data })
+export async function updateBrand(id: string, data: Partial<{ name: string; slug: string; description: string; logoPublicId: string; logoUrl: string; tagline: string; country: string; foundedYear: number; visibility: ProductVisibility }>) {
+  const brand = await db.brand.update({ where: { id }, data })
+  return brand
 }
 export async function deleteBrand(id: string) {
-  return db.brand.delete({ where: { id } })
+  const brand = await db.brand.delete({ where: { id } })
+  return brand
 }
 
 export async function listCategories() {
   return db.category.findMany({ orderBy: { name: 'asc' } })
 }
-export async function createCategory(data: { name: string; slug: string; description?: string; visibility?: ProductVisibility }) {
-  return db.category.create({ data })
+export async function createCategory(data: { name: string; slug: string; description?: string; imageUrl?: string; visibility?: ProductVisibility }) {
+  const category = await db.category.create({ data })
+  return category
 }
-export async function updateCategory(id: string, data: Partial<{ name: string; slug: string; description: string; visibility: ProductVisibility }>) {
-  return db.category.update({ where: { id }, data })
+export async function updateCategory(id: string, data: Partial<{ name: string; slug: string; description: string; imageUrl: string; visibility: ProductVisibility }>) {
+  const category = await db.category.update({ where: { id }, data })
+  return category
 }
 export async function deleteCategory(id: string) {
-  return db.category.delete({ where: { id } })
+  const category = await db.category.delete({ where: { id } })
+  return category
 }
 
 export async function listCollections() {
   return db.collection.findMany({ orderBy: { name: 'asc' } })
 }
-export async function createCollection(data: { name: string; slug: string; description?: string; visibility?: ProductVisibility }) {
-  return db.collection.create({ data })
+export async function createCollection(data: { name: string; slug: string; description?: string; tagline?: string; imageUrl?: string; visibility?: ProductVisibility }) {
+  const collection = await db.collection.create({ data })
+  return collection
 }
-export async function updateCollection(id: string, data: Partial<{ name: string; slug: string; description: string; visibility: ProductVisibility }>) {
-  return db.collection.update({ where: { id }, data })
+export async function updateCollection(id: string, data: Partial<{ name: string; slug: string; description: string; tagline: string; imageUrl: string; visibility: ProductVisibility }>) {
+  const collection = await db.collection.update({ where: { id }, data })
+  return collection
 }
 export async function deleteCollection(id: string) {
-  return db.collection.delete({ where: { id } })
+  const collection = await db.collection.delete({ where: { id } })
+  return collection
 }

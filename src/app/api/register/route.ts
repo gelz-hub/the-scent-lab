@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   // 5 accounts / hour / IP — registration abuse (bulk fake accounts) is the
   // threat here, not brute force, so the window is longer and the limit
   // lower than login's.
-  const { allowed } = rateLimit(`register:${clientIp(req)}`, 5, 60 * 60 * 1000)
+  const { allowed } = await rateLimit(`register:${clientIp(req)}`, 5, 60 * 60 * 1000)
   if (!allowed) {
     return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 })
   }

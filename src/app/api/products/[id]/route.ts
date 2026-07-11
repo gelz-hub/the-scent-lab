@@ -8,6 +8,8 @@ import { recordAudit, requestMetadata } from '@/lib/audit/audit-service'
 
 const productUpdateSchema = z.object({
   slug: z.string().trim().min(1).optional(),
+  sku: z.string().trim().min(1).optional().nullable(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'OUT_OF_STOCK', 'ARCHIVED']).optional(),
   name: z.string().trim().min(1).optional(),
   brand: z.string().trim().min(1).optional(),
   brandSlug: z.string().trim().min(1).optional(),
@@ -51,6 +53,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const before = await db.product.findUnique({ where: { id } })
   if (!before) return NextResponse.json({ error: 'Product not found.' }, { status: 404 })
+
+  if (parsed.data.sku && parsed.data.sku !== before.sku) {
+    const existingSku = await db.product.findUnique({ where: { sku: parsed.data.sku } })
+    if (existingSku && existingSku.id !== id) {
+      return NextResponse.json({ error: 'A product with this SKU already exists.' }, { status: 409 })
+    }
+  }
 
   const product = await db.product.update({ where: { id }, data: parsed.data }).catch(() => null)
   if (!product) return NextResponse.json({ error: 'Product not found.' }, { status: 404 })

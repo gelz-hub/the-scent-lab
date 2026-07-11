@@ -1,15 +1,24 @@
 import type { Metadata } from 'next'
 import { ProductListing } from '@/components/site/product-listing'
 import { Breadcrumb } from '@/components/site/breadcrumb'
-import { products } from '@/lib/data'
+import { EmptyState } from '@/components/site/empty-state'
+import { getProductsByTag, getBrands, getCategories, getCollections } from '@/lib/catalog'
+import type { Gender } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: 'Sale',
   description:
-    'Discover authentic fragrances on sale â limited-time savings on selected scents from the world’s finest houses.',
+    'Discover authentic fragrances on sale — limited-time savings on selected scents from the world’s finest houses.',
 }
 
-export default function SalePage() {
+export default async function SalePage() {
+  const [products, brands, categories, collections] = await Promise.all([
+    getProductsByTag('Sale'),
+    getBrands(),
+    getCategories(),
+    getCollections(),
+  ])
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Sale' }]} />
@@ -25,11 +34,18 @@ export default function SalePage() {
           they're gone.
         </p>
       </div>
-      <ProductListing
-        basePath="/sale"
-        pageSize={9}
-        baseProducts={products.filter((p) => p.tags.includes('Sale'))}
-      />
+      {products.length === 0 ? (
+        <EmptyState title="No products available yet." description="Check back soon for limited-time offers." />
+      ) : (
+        <ProductListing
+          basePath="/sale"
+          pageSize={9}
+          baseProducts={products}
+          allBrands={brands}
+          genderOptions={categories.map((c) => c.name) as Gender[]}
+          collectionOptions={collections.map((c) => c.name)}
+        />
+      )}
     </div>
   )
 }

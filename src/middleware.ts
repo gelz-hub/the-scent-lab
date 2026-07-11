@@ -9,7 +9,14 @@ import { isAdminRole } from '@/lib/rbac/permissions'
 // per matched path, so it can't express "some matched paths are public."
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const token = await getToken({ req })
+  // getToken() defaults `secureCookie` to whether NEXTAUTH_URL is https,
+  // but this project's cookie name (see src/lib/auth.ts) is keyed off
+  // NODE_ENV instead — the two disagree in local dev (NEXTAUTH_URL is set
+  // to the deployed https URL, NODE_ENV is "development"), so without this
+  // explicit override getToken() looks for `__Secure-next-auth.session-token`
+  // while the actual dev cookie is `next-auth.session-token`, and every
+  // /admin or /account request bounces back to /login even when signed in.
+  const token = await getToken({ req, secureCookie: process.env.NODE_ENV === 'production' })
   const role = token?.role as string | undefined
 
   // Maintenance mode: site-wide read-only banner page for everyone except

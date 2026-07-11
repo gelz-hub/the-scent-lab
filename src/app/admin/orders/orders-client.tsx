@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { toast } from 'sonner'
-import { Search, Eye, ShoppingCart } from 'lucide-react'
+import { Search, Eye, ShoppingCart, Loader2 } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -26,26 +26,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  orders,
-  formatCurrency,
-  type OrderStatus,
-} from '@/lib/admin-data'
+import { formatPrice } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { ExportCsvLink } from '@/components/admin/export-csv-link'
 
+type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PAYMENT_CONFIRMED'
+  | 'PREPARING'
+  | 'PACKED'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+
+interface AdminOrder {
+  id: string
+  number: string
+  customerName: string
+  email: string
+  date: string
+  items: number
+  total: number
+  status: OrderStatus
+  payment: string | null
+}
+
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING_PAYMENT: 'Pending Payment',
+  PAYMENT_CONFIRMED: 'Payment Confirmed',
+  PREPARING: 'Preparing',
+  PACKED: 'Packed',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+}
+
 const STATUS_CLASSES: Record<OrderStatus, string> = {
-  Delivered: 'bg-success/10 text-success',
-  Shipped: 'bg-brand/10 text-brand',
-  Processing: 'bg-amber-500/10 text-amber-600',
-  Cancelled: 'bg-danger/10 text-danger',
+  PENDING_PAYMENT: 'bg-amber-500/10 text-amber-600',
+  PAYMENT_CONFIRMED: 'bg-brand/10 text-brand',
+  PREPARING: 'bg-brand/10 text-brand',
+  PACKED: 'bg-brand/10 text-brand',
+  SHIPPED: 'bg-accent text-foreground',
+  DELIVERED: 'bg-success/10 text-success',
+  CANCELLED: 'bg-danger/10 text-danger',
 }
 
 type FilterValue = 'all' | OrderStatus
 
 export function OrdersClient() {
+  const [orders, setOrders] = React.useState<AdminOrder[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [query, setQuery] = React.useState('')
   const [filter, setFilter] = React.useState<FilterValue>('all')
+
+  React.useEffect(() => {
+    fetch('/api/admin/orders')
+      .then((res) => res.json())
+      .then((data: { orders?: AdminOrder[] }) => setOrders(data.orders ?? []))
+      .catch(() => toast.error('Could not load orders'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -58,7 +98,7 @@ export function OrdersClient() {
         o.email.toLowerCase().includes(q)
       return matchesFilter && matchesQuery
     })
-  }, [query, filter])
+  }, [orders, query, filter])
 
   return (
     <div className="space-y-6">
@@ -95,10 +135,9 @@ export function OrdersClient() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="Delivered">Delivered</SelectItem>
-                  <SelectItem value="Shipped">Shipped</SelectItem>
-                  <SelectItem value="Processing">Processing</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  {(Object.keys(STATUS_LABELS) as OrderStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <ExportCsvLink href="/api/admin/orders/export" />
@@ -120,12 +159,20 @@ export function OrdersClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin" strokeWidth={1.5} />
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <ShoppingCart className="h-8 w-8" strokeWidth={1.25} />
-                      <div className="text-sm">No orders match your filters</div>
+                      <div className="text-sm">
+                        {orders.length === 0 ? 'No orders yet.' : 'No orders match your filters'}
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -140,13 +187,13 @@ export function OrdersClient() {
                       <div className="text-xs text-muted-foreground">{order.email}</div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {order.date}
+                      {new Date(order.date).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="hidden sm:table-cell text-center text-muted-foreground">
                       {order.items}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {formatCurrency(order.total)}
+                      {formatPrice(order.total)}
                     </TableCell>
                     <TableCell>
                       <span
@@ -155,11 +202,11 @@ export function OrdersClient() {
                           STATUS_CLASSES[order.status]
                         )}
                       >
-                        {order.status}
+                        {STATUS_LABELS[order.status]}
                       </span>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-muted-foreground">
-                      {order.payment}
+                      {order.payment ?? '—'}
                     </TableCell>
                     <TableCell className="pr-6">
                       <div className="flex justify-end">
@@ -167,7 +214,7 @@ export function OrdersClient() {
                           variant="ghost"
                           size="icon"
                           aria-label={`View ${order.number}`}
-                          onClick={() => toast('View order', { description: `${order.number} · ${order.customerName}` })}
+                          onClick={() => toast('Order', { description: `${order.number} · ${order.customerName}` })}
                         >
                           <Eye className="h-4 w-4" strokeWidth={1.5} />
                         </Button>
