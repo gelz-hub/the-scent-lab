@@ -45,10 +45,8 @@ export type AddressFormInput = z.input<typeof addressSchema>
 
 export const paymentMethodSchema = z.enum([
   'ABA_KHQR',
-  'ABA_PAYWAY',
   'CREDIT_CARD',
   'COD',
-  'BANK_TRANSFER',
 ])
 
 export const createOrderSchema = z.object({
@@ -67,7 +65,10 @@ export const createOrderSchema = z.object({
       })
     )
     .min(1, 'Your cart is empty'),
-  discount: z.number().nonnegative().default(0),
+  // Never trust a client-supplied discount amount — only the code is
+  // accepted here; the server re-validates it and computes the discount
+  // itself (see src/lib/checkout/coupon-service.ts).
+  couponCode: z.string().trim().min(1).optional().nullable(),
 })
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>

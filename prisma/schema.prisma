@@ -273,6 +273,31 @@ enum RefundStatus {
   FAILED
 }
 
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+// Server-validated coupons — replaces the old client-only hardcoded promo
+// map. `value` is a percent (e.g. 10 = 10%) for PERCENTAGE, a flat USD
+// amount for FIXED_AMOUNT, and unused (null) for FREE_SHIPPING. Validity is
+// enforced by src/lib/checkout/coupon-service.ts, never by trusting the
+// client — both /api/coupons/validate and order creation call the same
+// function so a code can never be applied client-side and silently ignored
+// (or forged) server-side.
+model Coupon {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  type      CouponType
+  value     Float?
+  active    Boolean    @default(true)
+  startsAt  DateTime
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
 model Order {
   id          String      @id @default(cuid())
   orderNumber String      @unique

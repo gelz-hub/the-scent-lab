@@ -6,13 +6,13 @@ import Link from 'next/link'
 import { Minus, Plus, Trash2, ShoppingBag, Tag, Check, ArrowRight, X } from 'lucide-react'
 import { useStore, cartSubtotal } from '@/lib/store'
 import { formatPrice, formatKHR } from '@/lib/format'
+import { computeDiscount } from '@/lib/checkout/pricing'
+import { shippingFeeFor } from '@/lib/checkout/delivery'
+import { DEFAULT_ESTIMATE_PROVINCE } from '@/lib/checkout/constants'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 import { EmptyState } from '@/components/site/empty-state'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-
-const FREE_SHIP_THRESHOLD = 100
-const SHIP_FLAT = 9
 
 export default function CartPage() {
   const cart = useStore((s) => s.cart)
@@ -21,21 +21,28 @@ export default function CartPage() {
   const promo = useStore((s) => s.promo)
   const applyPromo = useStore((s) => s.applyPromo)
   const [code, setCode] = React.useState('')
+  const [applying, setApplying] = React.useState(false)
 
   const subtotal = cartSubtotal(cart)
-  const discount = promo ? subtotal * promo.discount : 0
+  const discount = computeDiscount(subtotal, promo)
   const afterDiscount = subtotal - discount
-  const shipping = afterDiscount >= FREE_SHIP_THRESHOLD || afterDiscount === 0 ? 0 : SHIP_FLAT
+  const freeShipping = promo?.type === 'FREE_SHIPPING'
+  // Same shared shippingFeeFor() the cart drawer and checkout use — see
+  // src/lib/checkout/delivery.ts. Phnom Penh default until a real address
+  // is known at checkout.
+  const shipping = shippingFeeFor(DEFAULT_ESTIMATE_PROVINCE, afterDiscount, { freeShipping })
   const total = afterDiscount + shipping
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!code.trim()) return
-    const ok = applyPromo(code)
-    if (ok) {
-      toast.success('Promo applied', { description: code.toUpperCase() })
+    setApplying(true)
+    const result = await applyPromo(code, subtotal)
+    setApplying(false)
+    if (result.ok) {
+      toast.success('Coupon applied', { description: code.toUpperCase() })
       setCode('')
     } else {
-      toast.error('Invalid promo code', { description: 'Try SCENT10 or WELCOME15' })
+      toast.error(result.error || 'Invalid coupon code')
     }
   }
 
@@ -158,9 +165,10 @@ export default function CartPage() {
               </div>
               <button
                 onClick={handleApply}
-                className="rounded-lg border border-border px-4 text-xs font-medium transition-colors hover:border-foreground/40"
+                disabled={applying || !code.trim()}
+                className="rounded-lg border border-border px-4 text-xs font-medium transition-colors hover:border-foreground/40 disabled:opacity-50"
               >
-                Apply
+                {applying ? 'Checking…' : 'Apply'}
               </button>
             </div>
             {promo && (

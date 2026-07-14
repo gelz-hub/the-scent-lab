@@ -20,15 +20,16 @@ import type { AddressFormValues } from '@/lib/checkout/schema'
 interface DeliverySelectorProps {
   form: AddressForm
   subtotal?: number
+  freeShipping?: boolean
 }
 
-export function DeliverySelector({ form, subtotal = 0 }: DeliverySelectorProps) {
+export function DeliverySelector({ form, subtotal = 0, freeShipping = false }: DeliverySelectorProps) {
   const { watch, setValue, formState: { errors } } = form
   const values = watch()
 
   const localCourier = values.province ? isLocalCourier(values.province) : false
   const estimate = values.province ? estimatedDeliveryFor(values.province) : null
-  const fee = values.province ? shippingFeeFor(values.province, subtotal) : null
+  const fee = values.province ? shippingFeeFor(values.province, subtotal, { freeShipping }) : null
 
   return (
     <div className="space-y-6">

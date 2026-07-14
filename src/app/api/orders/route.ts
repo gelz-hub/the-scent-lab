@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { createOrderSchema } from '@/lib/checkout/schema'
 import { resolveDeliveryMethod, shippingFeeFor, estimatedDeliveryFor } from '@/lib/checkout/delivery'
+import { validateCoupon } from '@/lib/checkout/coupon-service'
 import { generateOrderNumber } from '@/lib/checkout/order-number'
 import { buildCustomerShipmentView } from '@/lib/shipping/customer-view'
 import { generateAndStoreInvoice } from '@/lib/invoice/invoice-service'
@@ -70,10 +71,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid order.' }, { status: 400 })
   }
 
-  const { address, paymentMethod, items, discount } = parsed.data
+  const { address, paymentMethod, items, couponCode } = parsed.data
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0)
-  const shippingFee = shippingFeeFor(address.province, subtotal - discount)
+
+  let discount = 0
+  let freeShipping = false
+  if (couponCode) {
+    const result = await validateCoupon(couponCode, subtotal)
+    if (!result.valid) {
+      return NextResponse.json({ error: result.error || 'Coupon code is no longer valid.' }, { status: 400 })
+    }
+    discount = result.discount ?? 0
+    freeShipping = result.freeShipping ?? false
+  }
+
+  const shippingFee = shippingFeeFor(address.province, subtotal - discount, { freeShipping })
   const total = Math.max(0, subtotal - discount + shippingFee)
   const deliveryMethod = resolveDeliveryMethod(address.province)
 

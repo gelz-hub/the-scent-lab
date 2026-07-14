@@ -4,25 +4,30 @@ import * as React from 'react'
 import { Check, Tag, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { useStore } from '@/lib/store'
+import { useStore, cartSubtotal } from '@/lib/store'
 
 export function CouponInput() {
+  const cart = useStore((s) => s.cart)
   const promo = useStore((s) => s.promo)
   const applyPromo = useStore((s) => s.applyPromo)
   const removePromo = useStore((s) => s.removePromo)
 
   const [code, setCode] = React.useState('')
-  const [invalid, setInvalid] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
   const [applying, setApplying] = React.useState(false)
 
-  function handleApply(e: React.FormEvent) {
+  async function handleApply(e: React.FormEvent) {
     e.preventDefault()
     if (!code.trim()) return
     setApplying(true)
-    const ok = applyPromo(code)
-    setInvalid(!ok)
+    const result = await applyPromo(code, cartSubtotal(cart))
     setApplying(false)
-    if (ok) setCode('')
+    if (result.ok) {
+      setError(null)
+      setCode('')
+    } else {
+      setError(result.error ?? 'That code isn\'t valid or has expired.')
+    }
   }
 
   if (promo) {
@@ -52,20 +57,20 @@ export function CouponInput() {
             value={code}
             onChange={(e) => {
               setCode(e.target.value)
-              setInvalid(false)
+              setError(null)
             }}
             placeholder="Coupon code"
-            aria-invalid={invalid}
+            aria-invalid={!!error}
             className="h-10 border-0 px-0 shadow-none focus-visible:ring-0"
           />
         </div>
         <Button type="submit" variant="outline" disabled={applying || !code.trim()} className="shrink-0">
-          Apply
+          {applying ? 'Checking…' : 'Apply'}
         </Button>
       </div>
-      {invalid && (
+      {error && (
         <p role="alert" className="text-xs text-danger">
-          That code isn't valid or has expired.
+          {error}
         </p>
       )}
     </form>

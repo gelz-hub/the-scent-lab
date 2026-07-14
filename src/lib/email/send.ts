@@ -6,7 +6,7 @@ import { getInvoiceForOrder, getInvoiceDownloadUrl } from '@/lib/invoice/invoice
 import { buildCustomerShipmentView } from '@/lib/shipping/customer-view'
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  ABA_KHQR: 'ABA KHQR',
+  ABA_KHQR: 'KHQR',
   ABA_PAYWAY: 'ABA PayWay',
   CREDIT_CARD: 'Credit Card',
   COD: 'Cash on Delivery',

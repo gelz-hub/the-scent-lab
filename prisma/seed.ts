@@ -40,7 +40,31 @@ async function main() {
     },
   })
 
-  console.log('Seeded 3 users (admin/staff/customer). Catalog data (products, brands, categories, collections) is managed entirely through the admin panel — this script no longer seeds demo products.')
+  const now = new Date()
+  const farFuture = new Date('2099-01-01T00:00:00.000Z')
+  await db.coupon.upsert({
+    where: { code: 'SCENT10' },
+    update: {},
+    create: { code: 'SCENT10', type: 'PERCENTAGE', value: 10, startsAt: now, expiresAt: farFuture },
+  })
+  await db.coupon.upsert({
+    where: { code: 'WELCOME15' },
+    update: {},
+    create: { code: 'WELCOME15', type: 'PERCENTAGE', value: 15, startsAt: now, expiresAt: farFuture },
+  })
+  await db.coupon.upsert({
+    where: { code: 'FREESHIP' },
+    update: {},
+    create: {
+      code: 'FREESHIP',
+      type: 'FREE_SHIPPING',
+      value: null,
+      startsAt: now,
+      expiresAt: new Date('2027-12-31T23:59:59.000Z'),
+    },
+  })
+
+  console.log('Seeded 3 users (admin/staff/customer) and 3 coupons (SCENT10, WELCOME15, FREESHIP). Catalog data (products, brands, categories, collections) is managed entirely through the admin panel — this script no longer seeds demo products.')
 }
 
 main()

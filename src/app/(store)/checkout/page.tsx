@@ -30,6 +30,7 @@ import {
 } from '@/lib/checkout/use-address-form'
 import { addressSchema } from '@/lib/checkout/schema'
 import { shippingFeeFor, isLocalCourier, estimatedDeliveryFor } from '@/lib/checkout/delivery'
+import { computeDiscount } from '@/lib/checkout/pricing'
 import { DELIVERY_TYPES, LOGISTICS_COMPANIES, type PaymentMethodValue } from '@/lib/checkout/constants'
 import type { OrderStatusValue } from '@/lib/checkout/constants'
 
@@ -69,9 +70,12 @@ export default function CheckoutPage() {
   const values = form.watch()
 
   const subtotal = cartSubtotal(cart)
-  const discount = promo ? subtotal * promo.discount : 0
+  const discount = computeDiscount(subtotal, promo)
   const afterDiscount = subtotal - discount
-  const shippingFee = values.province ? shippingFeeFor(values.province, subtotal) : null
+  const freeShipping = promo?.type === 'FREE_SHIPPING'
+  const shippingFee = values.province
+    ? shippingFeeFor(values.province, afterDiscount, { freeShipping })
+    : null
   const total = afterDiscount + (shippingFee ?? 0)
 
   async function goNext() {
@@ -127,7 +131,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           address: a,
           paymentMethod,
-          discount,
+          couponCode: promo?.code ?? null,
           items: cart.map((line) => ({
             productId: line.productId,
             name: line.name,
@@ -259,7 +263,7 @@ export default function CheckoutPage() {
 
           {step === 'delivery' && (
             <FormCard title="Delivery method">
-              <DeliverySelector form={form} subtotal={afterDiscount} />
+              <DeliverySelector form={form} subtotal={afterDiscount} freeShipping={freeShipping} />
             </FormCard>
           )}
 

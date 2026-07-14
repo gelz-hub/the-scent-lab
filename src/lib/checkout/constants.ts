@@ -11,6 +11,13 @@ export type { Province }
 /** Provinces served by local courier (same-day). Everything else falls back to LOGISTICS. */
 export const LOCAL_COURIER_PROVINCES: Province[] = ['Phnom Penh']
 
+/**
+ * Used only where a shipping cost must be estimated before an address is
+ * known (the cart drawer). Checkout always uses the customer's real
+ * province once entered — see shippingFeeFor in src/lib/checkout/delivery.ts.
+ */
+export const DEFAULT_ESTIMATE_PROVINCE: Province = 'Phnom Penh'
+
 export const DELIVERY_METHODS = {
   LOCAL_COURIER: { value: 'LOCAL_COURIER', label: 'Local Courier' },
   LOGISTICS: { value: 'LOGISTICS', label: 'Logistics Delivery' },
@@ -44,11 +51,9 @@ export const PREFERRED_DELIVERY_TIMES = [
 export type PreferredDeliveryTimeValue = (typeof PREFERRED_DELIVERY_TIMES)[number]['value']
 
 export const PAYMENT_METHODS = [
-  { value: 'ABA_KHQR', label: 'ABA KHQR', description: 'Scan with any banking app', enabled: true },
-  { value: 'ABA_PAYWAY', label: 'ABA PayWay', description: 'Pay by card via PayWay', enabled: true },
+  { value: 'ABA_KHQR', label: 'KHQR', description: 'Scan with any banking app', enabled: true },
   { value: 'CREDIT_CARD', label: 'Credit Card', description: 'Visa, Mastercard', enabled: true },
   { value: 'COD', label: 'Cash on Delivery', description: 'Pay when your order arrives', enabled: true },
-  { value: 'BANK_TRANSFER', label: 'Bank Transfer', description: 'Coming soon', enabled: false },
 ] as const
 
 export type PaymentMethodValue = (typeof PAYMENT_METHODS)[number]['value']

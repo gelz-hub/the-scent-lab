@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Product, VolumeOption } from '@/lib/data'
+import type { AppliedCoupon } from '@/lib/checkout/pricing'
 
 export interface CartLine {
   productId: string
@@ -49,16 +50,12 @@ interface StoreState {
   mobileNavOpen: boolean
   setMobileNavOpen: (open: boolean) => void
 
-  // Promo
-  promo: { code: string; discount: number } | null
-  applyPromo: (code: string) => boolean
+  // Promo — server-validated, see src/lib/checkout/coupon-service.ts. Never
+  // trust a coupon client-side only: order creation re-validates the code
+  // itself and ignores whatever discount the client thinks it computed.
+  promo: AppliedCoupon | null
+  applyPromo: (code: string, subtotal: number) => Promise<{ ok: boolean; error?: string }>
   removePromo: () => void
-}
-
-const PROMO_CODES: Record<string, number> = {
-  SCENT10: 0.1,
-  WELCOME15: 0.15,
-  FREESHIP: 0,
 }
 
 export const useStore = create<StoreState>()(
@@ -160,13 +157,22 @@ export const useStore = create<StoreState>()(
       setMobileNavOpen: (open) => set({ mobileNavOpen: open }),
 
       promo: null,
-      applyPromo: (code) => {
-        const upper = code.trim().toUpperCase()
-        if (PROMO_CODES[upper] !== undefined) {
-          set({ promo: { code: upper, discount: PROMO_CODES[upper] } })
-          return true
+      applyPromo: async (code, subtotal) => {
+        try {
+          const res = await fetch('/api/coupons/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, subtotal }),
+          })
+          const data = await res.json()
+          if (!data.valid || !data.coupon) {
+            return { ok: false, error: data.error || 'Invalid coupon code.' }
+          }
+          set({ promo: data.coupon })
+          return { ok: true }
+        } catch {
+          return { ok: false, error: 'Could not validate coupon. Please try again.' }
         }
-        return false
       },
       removePromo: () => set({ promo: null }),
     }),

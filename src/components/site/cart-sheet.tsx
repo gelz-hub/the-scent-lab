@@ -12,11 +12,14 @@ import {
 import { Minus, Plus, Trash2, ShoppingBag, Tag, X, Check } from 'lucide-react'
 import { useStore, cartSubtotal, type CartLine } from '@/lib/store'
 import { formatPrice } from '@/lib/format'
+import { computeDiscount } from '@/lib/checkout/pricing'
+import { shippingFeeFor } from '@/lib/checkout/delivery'
+import { DEFAULT_ESTIMATE_PROVINCE } from '@/lib/checkout/constants'
+import { SHIPPING_FEES } from '@/lib/shipping/config'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-const FREE_SHIP_THRESHOLD = 100
-const SHIP_FLAT = 9
+const FREE_SHIP_THRESHOLD = SHIPPING_FEES.LOCAL_COURIER.freeShippingThreshold
 
 export function CartSheet() {
   const cart = useStore((s) => s.cart)
@@ -29,26 +32,38 @@ export function CartSheet() {
   const applyPromo = useStore((s) => s.applyPromo)
 
   const [code, setCode] = React.useState('')
+  const [applying, setApplying] = React.useState(false)
 
   const subtotal = cartSubtotal(cart)
-  const discount = promo ? subtotal * promo.discount : 0
+  const discount = computeDiscount(subtotal, promo)
   const afterDiscount = subtotal - discount
-  const shipping =
-    afterDiscount >= FREE_SHIP_THRESHOLD || afterDiscount === 0 ? 0 : SHIP_FLAT
+  const freeShipping = promo?.type === 'FREE_SHIPPING'
+  // Estimated using the same shared shippingFeeFor() checkout uses, with a
+  // Phnom Penh default until a real address is known — never a separate
+  // hardcoded number, so this can never drift from the checkout figure.
+  const shipping = shippingFeeFor(DEFAULT_ESTIMATE_PROVINCE, afterDiscount, { freeShipping })
   const total = afterDiscount + shipping
   const remainingForFreeShip = Math.max(0, FREE_SHIP_THRESHOLD - afterDiscount)
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!code.trim()) return
-    const ok = applyPromo(code)
-    if (ok) {
-      const pct = Math.round((useStore.getState().promo?.discount ?? 0) * 100)
-      toast.success('Promo applied', {
-        description: `${code.toUpperCase()} · ${pct > 0 ? `${pct}% off` : 'Free shipping'}`,
+    setApplying(true)
+    const result = await applyPromo(code, subtotal)
+    setApplying(false)
+    if (result.ok) {
+      const applied = useStore.getState().promo
+      toast.success('Coupon applied', {
+        description: applied
+          ? applied.type === 'FREE_SHIPPING'
+            ? 'Free shipping'
+            : applied.type === 'PERCENTAGE'
+              ? `${applied.value}% off`
+              : `${formatPrice(applied.value ?? 0)} off`
+          : undefined,
       })
       setCode('')
     } else {
-      toast.error('Invalid promo code', { description: 'Try SCENT10 or WELCOME15' })
+      toast.error(result.error || 'Invalid coupon code')
     }
   }
 
@@ -91,7 +106,7 @@ export function CartSheet() {
           <>
             {/* Free shipping progress */}
             <div className="border-b border-border bg-surface/60 px-5 py-3">
-              {remainingForFreeShip > 0 ? (
+              {shipping > 0 ? (
                 <p className="text-xs text-muted-foreground">
                   Add <span className="font-medium text-foreground">{formatPrice(remainingForFreeShip)}</span> for free shipping
                 </p>
@@ -103,7 +118,7 @@ export function CartSheet() {
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-border">
                 <div
                   className="h-full rounded-full bg-brand transition-all duration-500"
-                  style={{ width: `${Math.min(100, (afterDiscount / FREE_SHIP_THRESHOLD) * 100)}%` }}
+                  style={{ width: `${freeShipping ? 100 : Math.min(100, (afterDiscount / FREE_SHIP_THRESHOLD) * 100)}%` }}
                 />
               </div>
             </div>
@@ -181,9 +196,10 @@ export function CartSheet() {
                 </div>
                 <button
                   onClick={handleApply}
-                  className="rounded-lg border border-border px-4 text-xs font-medium transition-colors hover:border-foreground/40"
+                  disabled={applying || !code.trim()}
+                  className="rounded-lg border border-border px-4 text-xs font-medium transition-colors hover:border-foreground/40 disabled:opacity-50"
                 >
-                  Apply
+                  {applying ? 'Checking…' : 'Apply'}
                 </button>
               </div>
 

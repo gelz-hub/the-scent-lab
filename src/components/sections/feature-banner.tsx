@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 export function FeatureBanner() {
   return (
-    <section className="relative overflow-hidden bg-foreground py-20 sm:py-28">
+    <section className="relative overflow-hidden bg-[#111111] py-20 sm:py-28">
       {/* Subtle gradient texture */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(95,175,146,0.15),transparent_70%)]" />
 
@@ -25,7 +25,7 @@ export function FeatureBanner() {
           <h2 className="mt-6 font-display text-4xl font-medium leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl">
             Every fragrance
             <br />
-            <span className="italic text-brand-dark dark:text-brand">
+            <span className="italic text-[#5faf92]">
               tells a story.
             </span>
           </h2>

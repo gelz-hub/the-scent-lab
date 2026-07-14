@@ -1,16 +1,14 @@
 'use client'
 
-import { QrCode, CreditCard, Banknote, Landmark, ShieldCheck } from 'lucide-react'
+import { QrCode, CreditCard, Banknote } from 'lucide-react'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { PAYMENT_METHODS, type PaymentMethodValue } from '@/lib/checkout/constants'
 
 const ICONS: Record<PaymentMethodValue, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   ABA_KHQR: QrCode,
-  ABA_PAYWAY: ShieldCheck,
   CREDIT_CARD: CreditCard,
   COD: Banknote,
-  BANK_TRANSFER: Landmark,
 }
 
 interface PaymentMethodSelectorProps {
