@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { createOrderSchema } from '@/lib/checkout/schema'
 import { resolveDeliveryMethod, shippingFeeFor, estimatedDeliveryFor } from '@/lib/checkout/delivery'
@@ -14,7 +13,7 @@ import { rateLimit, clientIp } from '@/lib/security/rate-limit'
 import { logger } from '@/lib/logging/logger'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const orders = await db.order.findMany({
@@ -24,7 +23,7 @@ export async function GET() {
       address: true,
       payments: { orderBy: { createdAt: 'desc' } },
       invoice: true,
-      // Customer-safe projection only — never internalNotes, staff ids, or archivedAt.
+      // Customer-safe projection only â€” never internalNotes, staff ids, or archivedAt.
       shipment: {
         select: {
           deliveryMethod: true,
@@ -42,7 +41,7 @@ export async function GET() {
   })
 
   // `payment` is the most recent attempt (for display); `payments` is the
-  // full retry history, oldest first — see src/lib/payment/README.md.
+  // full retry history, oldest first â€” see src/lib/payment/README.md.
   const ordersWithFriendlyShipment = orders.map((order) => ({
     ...order,
     payment: order.payments[0] ?? null,
@@ -54,10 +53,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
-  // 20 orders / 10 minutes / account+IP — generous enough for legitimate
+  // 20 orders / 10 minutes / account+IP â€” generous enough for legitimate
   // rapid retries after a failed payment, but blocks scripted checkout spam
   // (each order create also triggers a payment-provider call, so this
   // doubles as a throttle on outbound provider traffic).
@@ -124,7 +123,7 @@ export async function POST(req: Request) {
           postalCode: address.postalCode || null,
           deliveryType: address.deliveryType,
           deliveryMethod,
-          // Customer's preferred courier for province orders — respected through
+          // Customer's preferred courier for province orders â€” respected through
           // fulfillment unless staff records a valid reason to change it (see Shipment).
           deliveryCompany: deliveryMethod === 'LOGISTICS' ? address.deliveryCompany : null,
           deliveryNote: address.deliveryNote || null,
@@ -138,7 +137,7 @@ export async function POST(req: Request) {
   })
 
   // Payment creation is a dedicated, provider-abstracted step (see
-  // src/lib/payment/payment-service.ts) — this route never marks a payment
+  // src/lib/payment/payment-service.ts) â€” this route never marks a payment
   // PAID itself; only PaymentService.verifyPayment() does that, after
   // backend verification against the actual provider.
   let paymentResult: Awaited<ReturnType<typeof createPayment>> | null = null
@@ -182,11 +181,11 @@ export async function POST(req: Request) {
     logger.error('shipment', 'shipment_auto_creation_failed', { orderId: order.id, error })
   }
 
-  // Invoice generation is independent of shipping — it never waits on, or is
+  // Invoice generation is independent of shipping â€” it never waits on, or is
   // blocked by, the shipment step above. Only generated once payment has
   // actually succeeded (never for a still-PENDING/PROCESSING payment, and
   // never for COD until staff confirms cash collection). No email is sent
-  // here in this version — see src/lib/invoice/README.md for how an
+  // here in this version â€” see src/lib/invoice/README.md for how an
   // EmailService plugs in later without this route changing.
   if (paymentResult.status === 'PAID') {
     try {

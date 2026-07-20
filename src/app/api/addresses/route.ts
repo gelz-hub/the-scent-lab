@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { listAddresses, createAddress } from '@/lib/account/address-service'
 
 const addressSchema = z.object({
@@ -26,7 +25,7 @@ const addressSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const addresses = await listAddresses(session.user.id)
@@ -34,7 +33,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const parsed = addressSchema.safeParse(await req.json().catch(() => null))

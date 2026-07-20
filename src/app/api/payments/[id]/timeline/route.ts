@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getAuthSession } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { buildPaymentTimeline } from '@/lib/payment/timeline'
 
 // Customer-safe payment timeline — a handful of human milestones, never
 // provider responses or internal event messages. See src/lib/payment/README.md.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const { id } = await params

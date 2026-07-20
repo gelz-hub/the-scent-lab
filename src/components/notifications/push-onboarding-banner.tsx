@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/components/providers/session-provider'
 import { toast } from 'sonner'
 import { Bell, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'

@@ -1,6 +1,6 @@
 'use client'
 
-import { signOut } from 'next-auth/react'
+import { signOut } from '@/components/providers/session-provider'
 import { toast } from 'sonner'
 import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'

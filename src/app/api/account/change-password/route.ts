@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { changePassword, InvalidCurrentPasswordError } from '@/lib/account/customer-service'
 import { passwordSchema } from '@/lib/security/password'
 import { rateLimit, clientIp } from '@/lib/security/rate-limit'
@@ -12,10 +11,10 @@ const schema = z.object({
 })
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
-  // 5 attempts / 15 minutes / account — guards against someone with a
+  // 5 attempts / 15 minutes / account â€” guards against someone with a
   // stolen session cookie brute-forcing the current-password check.
   const { allowed } = await rateLimit(`change-password:${session.user.id}:${clientIp(req)}`, 5, 15 * 60 * 1000)
   if (!allowed) return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 })

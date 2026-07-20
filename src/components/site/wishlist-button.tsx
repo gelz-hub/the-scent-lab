@@ -1,7 +1,7 @@
 'use client'
 
 import { Heart } from 'lucide-react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/components/providers/session-provider'
 import { useStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'

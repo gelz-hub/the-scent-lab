@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/site/breadcrumb'
+import { confirmPasswordReset } from '@/lib/firebase/auth-client'
 
 export default function ResetPasswordPage() {
   return (
@@ -18,7 +19,7 @@ export default function ResetPasswordPage() {
 function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token') || ''
+  const token = searchParams.get('oobCode') || ''
 
   const [password, setPassword] = React.useState('')
   const [confirmPassword, setConfirmPassword] = React.useState('')
@@ -37,21 +38,15 @@ function ResetPasswordForm() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
-      })
-      const data = await res.json().catch(() => null)
-      if (!res.ok) {
-        toast.error(data?.error || 'Something went wrong. Please try again.')
-        return
-      }
-      toast.success('Password reset', { description: 'You can now sign in with your new password.' })
-      router.push('/login')
+      await confirmPasswordReset(token, password)
+    } catch {
+      toast.error('This reset link is invalid or has expired.')
+      return
     } finally {
       setLoading(false)
     }
+    toast.success('Password reset', { description: 'You can now sign in with your new password.' })
+    router.push('/login')
   }
 
   return (

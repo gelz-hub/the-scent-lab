@@ -1,23 +1,56 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { jwtVerify, importX509, decodeProtectedHeader } from 'jose'
 import { isAdminRole } from '@/lib/rbac/permissions'
 
-// Manual token check (not withAuth's wrapper) because this middleware now
-// covers two independent concerns with different scopes: maintenance mode
-// applies site-wide, while the "must be signed in" gate only applies to
-// /admin and /account. withAuth's `authorized` callback is all-or-nothing
-// per matched path, so it can't express "some matched paths are public."
+const SESSION_COOKIE_NAME = 'session'
+
+// Google does NOT publish a JWKS for Firebase session cookies — only a
+// { kid: pemCertificate } map of X.509 certs (a different signing key than
+// ID tokens, which do have a JWKS). So verification here means: fetch that
+// cert map, pick the cert matching the cookie's `kid` header, and import it
+// as a public key for jose to verify against. Cached for 1 hour (Google's
+// own Cache-Control on this endpoint) so most requests don't refetch.
+const SESSION_COOKIE_CERTS_URL = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys'
+
+let certsCache: { certs: Record<string, string>; fetchedAt: number } | null = null
+const CERTS_TTL_MS = 60 * 60 * 1000
+
+async function getCerts(): Promise<Record<string, string>> {
+  if (certsCache && Date.now() - certsCache.fetchedAt < CERTS_TTL_MS) return certsCache.certs
+  const res = await fetch(SESSION_COOKIE_CERTS_URL)
+  const certs = (await res.json()) as Record<string, string>
+  certsCache = { certs, fetchedAt: Date.now() }
+  return certs
+}
+
+async function readRole(req: NextRequest): Promise<{ authenticated: boolean; role?: string }> {
+  const sessionCookie = req.cookies.get(SESSION_COOKIE_NAME)?.value
+  if (!sessionCookie) return { authenticated: false }
+
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID
+  try {
+    const { kid } = decodeProtectedHeader(sessionCookie)
+    const certs = await getCerts()
+    const pem = kid ? certs[kid] : undefined
+    if (!pem) return { authenticated: false }
+
+    const publicKey = await importX509(pem, 'RS256')
+    const { payload } = await jwtVerify(sessionCookie, publicKey, {
+      issuer: `https://session.firebase.google.com/${projectId}`,
+      audience: projectId,
+    })
+    return { authenticated: true, role: payload.role as string | undefined }
+  } catch {
+    return { authenticated: false }
+  }
+}
+
+// Manual token check because this middleware now covers two independent
+// concerns with different scopes: maintenance mode applies site-wide,
+// while the "must be signed in" gate only applies to /admin and /account.
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  // getToken() defaults `secureCookie` to whether NEXTAUTH_URL is https,
-  // but this project's cookie name (see src/lib/auth.ts) is keyed off
-  // NODE_ENV instead — the two disagree in local dev (NEXTAUTH_URL is set
-  // to the deployed https URL, NODE_ENV is "development"), so without this
-  // explicit override getToken() looks for `__Secure-next-auth.session-token`
-  // while the actual dev cookie is `next-auth.session-token`, and every
-  // /admin or /account request bounces back to /login even when signed in.
-  const token = await getToken({ req, secureCookie: process.env.NODE_ENV === 'production' })
-  const role = token?.role as string | undefined
+  const { authenticated, role } = await readRole(req)
 
   // Maintenance mode: site-wide read-only banner page for everyone except
   // admin-role staff (who need to keep working) and the health check (so
@@ -39,7 +72,7 @@ export default async function middleware(req: NextRequest) {
   if (pathname.startsWith('/admin') && !isAdminRole(role ?? '')) {
     return NextResponse.redirect(new URL('/login?callbackUrl=' + pathname, req.url))
   }
-  if (pathname.startsWith('/account') && !token) {
+  if (pathname.startsWith('/account') && !authenticated) {
     return NextResponse.redirect(new URL('/login?callbackUrl=' + pathname, req.url))
   }
 

@@ -2,6 +2,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAnalytics, isSupported as analyticsSupported } from 'firebase/analytics'
+import { getAuth, type Auth } from 'firebase/auth'
 import {
   getMessaging,
   getToken,
@@ -14,6 +15,17 @@ import { firebaseConfig, firebaseVapidKey, isFirebaseConfigured } from './config
 function getFirebaseApp() {
   if (!isFirebaseConfigured) return null
   return getApps().length ? getApp() : initializeApp(firebaseConfig)
+}
+
+let authInstance: Auth | null = null
+
+export function getFirebaseAuth(): Auth {
+  if (!authInstance) {
+    const app = getFirebaseApp()
+    if (!app) throw new Error('Firebase is not configured')
+    authInstance = getAuth(app)
+  }
+  return authInstance
 }
 
 export async function initAnalytics() {

@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { cloudinary } from '@/lib/cloudinary'
 import { updateProfile } from '@/lib/account/customer-service'
 import { sniffImageType } from '@/lib/security/image-sniff'
@@ -8,9 +7,9 @@ import { sniffImageType } from '@/lib/security/image-sniff'
 const MAX_BYTES = 8 * 1024 * 1024 // 8MB
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif'])
 
-/** Customer-facing avatar upload — separate from the staff-only /api/upload (product images), same Cloudinary publicId+url storage pattern (never store only a URL). */
+/** Customer-facing avatar upload â€” separate from the staff-only /api/upload (product images), same Cloudinary publicId+url storage pattern (never store only a URL). */
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
@@ -31,7 +30,7 @@ export async function POST(req: Request) {
 
   const buffer = Buffer.from(await file.arrayBuffer())
 
-  // Client-supplied file.type is just a label — verify the actual bytes so a
+  // Client-supplied file.type is just a label â€” verify the actual bytes so a
   // renamed non-image file can't be smuggled through to Cloudinary.
   if (!sniffImageType(buffer)) {
     return NextResponse.json({ error: 'File content does not match a supported image format.' }, { status: 400 })

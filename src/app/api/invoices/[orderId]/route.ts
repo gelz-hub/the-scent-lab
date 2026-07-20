@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getAuthSession } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { hasPermission } from '@/lib/rbac/permissions'
 import { getInvoiceForOrder, getInvoiceDownloadUrl } from '@/lib/invoice/invoice-service'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ orderId: string }> }) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const { orderId } = await params

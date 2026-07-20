@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import {
   createReview,
   listReviewsForProduct,
@@ -21,7 +20,7 @@ export async function GET(req: Request) {
   }
 
   if (mine) {
-    const session = await getServerSession(authOptions)
+    const session = await getAuthSession()
     if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
     const reviews = await listReviewsForUser(session.user.id)
     return NextResponse.json({ reviews })
@@ -38,7 +37,7 @@ const createSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null))

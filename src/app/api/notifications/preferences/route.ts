@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 const prefsSchema = z.object({
@@ -13,7 +12,7 @@ const prefsSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const prefs = await db.notificationPreference.upsert({
@@ -26,7 +25,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const parsed = prefsSchema.safeParse(await req.json().catch(() => null))

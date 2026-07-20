@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { notifyOrderUpdate } from '@/lib/notifications'
 import { shippingStatusLabel, type ShippingStatusValue } from '@/lib/shipping/constants'
@@ -19,7 +18,7 @@ async function requireStaff(action: 'read' | 'write' = 'write') {
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const { id } = await params

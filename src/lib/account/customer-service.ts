@@ -2,8 +2,8 @@
 // account security (password change). Never touches Address/Wishlist/
 // Review/AccountNotification directly — see src/lib/account/README.md.
 
-import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
+import { getAdminAuth } from '@/lib/firebase/admin-auth'
 
 export interface ProfileUpdateInput {
   name?: string
@@ -57,11 +57,21 @@ export class InvalidCurrentPasswordError extends Error {
   }
 }
 
+// Admin SDK can set a password but can't verify one, so the current
+// password is checked via the Identity Toolkit REST API (the same check
+// the client SDK's signInWithEmailAndPassword performs) before rotating it.
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
   const user = await db.user.findUniqueOrThrow({ where: { id: userId } })
-  const valid = await bcrypt.compare(currentPassword, user.passwordHash)
-  if (!valid) throw new InvalidCurrentPasswordError()
 
-  const passwordHash = await bcrypt.hash(newPassword, 10)
-  await db.user.update({ where: { id: userId }, data: { passwordHash } })
+  const verifyRes = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user.email, password: currentPassword, returnSecureToken: false }),
+    }
+  )
+  if (!verifyRes.ok) throw new InvalidCurrentPasswordError()
+
+  await getAdminAuth().updateUser(userId, { password: newPassword })
 }

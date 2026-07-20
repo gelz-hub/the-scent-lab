@@ -14,7 +14,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from 'lucide-react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/components/providers/session-provider'
 import { useStore } from '@/lib/store'
 import { ThemeToggle } from './theme-toggle'
 import { NotificationBell } from './notification-bell'

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getAuthSession } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { verifyAndAdvanceOrder } from '@/lib/payment/orchestrate-verification'
 
@@ -9,7 +8,7 @@ import { verifyAndAdvanceOrder } from '@/lib/payment/orchestrate-verification'
 // -> ShipmentService. PaymentService itself never calls the other services;
 // this route observes the verified status and calls them only on PAID.
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const { id } = await params

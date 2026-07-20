@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { getProfile } from '@/lib/account/customer-service'
 import { listAddresses } from '@/lib/account/address-service'
@@ -8,9 +7,9 @@ import { listNotifications, unreadCount } from '@/lib/notification-center/servic
 
 const ACTIVE_SHIPMENT_STATUSES = ['PENDING', 'PREPARING', 'READY_FOR_SHIPMENT', 'SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY']
 
-/** One aggregation read for the account dashboard — profile, recent orders, active shipments, saved addresses, wishlist count, recent notifications. Never writes anything. */
+/** One aggregation read for the account dashboard â€” profile, recent orders, active shipments, saved addresses, wishlist count, recent notifications. Never writes anything. */
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const userId = session.user.id

@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { getProfile, updateProfile } from '@/lib/account/customer-service'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const profile = await getProfile(session.user.id)
@@ -23,7 +22,7 @@ const updateSchema = z.object({
 })
 
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const parsed = updateSchema.safeParse(await req.json().catch(() => null))

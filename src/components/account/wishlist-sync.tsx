@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/components/providers/session-provider'
 import { useStore } from '@/lib/store'
 
 /** Hydrates the client wishlist store from the DB on login — mounted once in the root layout, mirrors NotificationListener's pattern. Merges rather than overwrites, so anything wishlisted as a guest before signing in isn't lost. */

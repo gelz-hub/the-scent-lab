@@ -23,7 +23,10 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String
+  // Credentials now live in Firebase Auth (see src/lib/firebase/admin-auth.ts);
+  // this id is always kept identical to the user's Firebase uid. Column kept
+  // (nullable) only for pre-migration history — no longer written to.
+  passwordHash String?
   name         String?
   role         Role     @default(CUSTOMER)
   createdAt    DateTime @default(now())
@@ -59,10 +62,10 @@ model User {
   passwordResetTokens  PasswordResetToken[]
 }
 
-// One row per "forgot password" request. `tokenHash` stores a SHA-256 hash
-// of the token that goes in the email link — never the raw token — so a DB
-// leak alone can't be used to reset accounts. `usedAt` makes each token
-// single-use; `expiresAt` bounds its lifetime (1 hour, set by the caller).
+// Deprecated — password reset is now handled by Firebase Auth
+// (generatePasswordResetLink/confirmPasswordReset, see
+// src/app/api/forgot-password/route.ts). Table kept only for historical
+// rows from before the Firebase migration; no longer written to.
 model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String

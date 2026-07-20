@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+﻿import { NextResponse } from 'next/server'
+import { getAuthSession } from '@/lib/auth/session'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 
 const bodySchema = z.object({
@@ -9,9 +8,9 @@ const bodySchema = z.object({
   action: z.enum(['register', 'unregister']).default('register'),
 })
 
-/** Status check only — used by the login onboarding banner to decide whether to show at all. Registration itself still only happens via POST below. */
+/** Status check only â€” used by the login onboarding banner to decide whether to show at all. Registration itself still only happens via POST below. */
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const count = await db.pushToken.count({ where: { userId: session.user.id } })
@@ -19,7 +18,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getAuthSession()
   if (!session) return NextResponse.json({ error: 'Not authorized.' }, { status: 401 })
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => null))
