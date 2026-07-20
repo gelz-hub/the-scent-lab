@@ -56,6 +56,23 @@ model User {
   auditLogs            AuditLog[]
   updatedSettings      SystemSetting[]
   scheduledReports     ScheduledReport[]
+  passwordResetTokens  PasswordResetToken[]
+}
+
+// One row per "forgot password" request. `tokenHash` stores a SHA-256 hash
+// of the token that goes in the email link — never the raw token — so a DB
+// leak alone can't be used to reset accounts. `usedAt` makes each token
+// single-use; `expiresAt` bounds its lifetime (1 hour, set by the caller).
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // Append-only — see src/lib/audit/README section in src/lib/rbac/README.md,
@@ -677,26 +694,26 @@ enum InventoryMovementType {
 // module (ProductService/InventoryService, admin dashboards) is built
 // against going forward. See src/lib/inventory/README.md.
 model Product {
-  id             String @id @default(cuid())
-  slug           String @unique
+  id             String  @id @default(cuid())
+  slug           String  @unique
   name           String
   brand          String
   brandSlug      String
   gender         String
   category       String
   collection     Json // string[]
-  image          String @db.Text
+  image          String  @db.Text
   gallery        Json // string[]
   volumes        Json // { ml: number; price: number }[]
   compareAtPrice Float?
-  rating         Float  @default(0)
-  reviewCount    Int    @default(0)
-  description    String @db.Text
-  story          String @db.Text
+  rating         Float   @default(0)
+  reviewCount    Int     @default(0)
+  description    String  @db.Text
+  story          String  @db.Text
   notes          Json // { top: string[]; heart: string[]; base: string[] }
-  longevity      Int    @default(3)
-  projection     Int    @default(3)
-  sillage        Int    @default(3)
+  longevity      Int     @default(3)
+  projection     Int     @default(3)
+  sillage        Int     @default(3)
   seasons        Json // string[]
   occasions      Json // string[]
   country        String
@@ -706,7 +723,7 @@ model Product {
   // authoritative source of truth for inventory is Inventory (per
   // ProductVariant), never this field. Kept so existing storefront
   // "in stock" badges keep working unmodified.
-  stock          Int    @default(0)
+  stock          Int     @default(0)
   // Same legacy-simplicity rationale as `stock` above: the simple admin
   // product form (src/components/admin/product-form-dialog.tsx) doesn't
   // create ProductVariant rows, so it needs its own SKU slot rather than

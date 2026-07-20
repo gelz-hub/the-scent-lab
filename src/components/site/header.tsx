@@ -97,6 +97,9 @@ export function Header() {
     setOpenMenu(null)
   }
 
+  // ── Mobile drawer accordions ──────────────────────────────────────
+  const [openMobileSection, setOpenMobileSection] = React.useState<DesktopMenuKey | null>(null)
+
   React.useEffect(() => {
     closeNow()
     setOpenMobileSection(null)
@@ -110,9 +113,6 @@ export function Header() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
-
-  // ── Mobile drawer accordions ──────────────────────────────────────
-  const [openMobileSection, setOpenMobileSection] = React.useState<DesktopMenuKey | null>(null)
 
   const mobileTop = React.useMemo(() => {
     const sale = NAV.find((item) => item.label === 'Sale')!

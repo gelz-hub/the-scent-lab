@@ -2,6 +2,8 @@ import { getResendClient, isEmailConfigured, FROM_EMAIL } from './resend'
 import { paymentConfirmationSubject, paymentConfirmationEmail } from './templates/payment-confirmation'
 import { shipmentConfirmationSubject, shipmentConfirmationEmail } from './templates/shipment-confirmation'
 import { deliveredSubject, deliveredEmail } from './templates/delivered'
+import { passwordResetSubject, passwordResetEmail } from './templates/password-reset'
+import { isSmtpConfigured, sendViaSmtp } from './smtp'
 import { getInvoiceForOrder, getInvoiceDownloadUrl } from '@/lib/invoice/invoice-service'
 import { buildCustomerShipmentView } from '@/lib/shipping/customer-view'
 
@@ -104,6 +106,40 @@ export async function sendPaymentConfirmationEmail(order: OrderForEmail) {
   } catch (error) {
     console.error('[email] failed to send payment confirmation', { orderId: order.id, error })
   }
+}
+
+/**
+ * Password Reset — sent when a user requests a reset link from
+ * /forgot-password. Tries Resend first (the default transport for every
+ * other transactional email); falls back to Gmail SMTP so this works
+ * without a paid Resend key — see src/lib/email/smtp.ts.
+ */
+export async function sendPasswordResetEmail(to: { email: string; name: string | null }, resetUrl: string) {
+  const html = passwordResetEmail({ customerName: to.name || 'there', resetUrl })
+  const subject = passwordResetSubject()
+
+  if (isEmailConfigured) {
+    const resend = getResendClient()
+    if (resend) {
+      try {
+        await resend.emails.send({ from: FROM_EMAIL, to: to.email, subject, html })
+        return
+      } catch (error) {
+        console.error('[email] Resend failed for password reset, trying SMTP fallback', { email: to.email, error })
+      }
+    }
+  }
+
+  if (isSmtpConfigured) {
+    try {
+      await sendViaSmtp({ to: to.email, subject, html })
+      return
+    } catch (error) {
+      console.error('[email] SMTP fallback failed to send password reset email', { email: to.email, error })
+    }
+  }
+
+  console.warn('[email] no email transport configured (RESEND_API_KEY or GMAIL_USER/GMAIL_APP_PASSWORD) — skipping password reset email', { email: to.email })
 }
 
 interface ShipmentForEmail {

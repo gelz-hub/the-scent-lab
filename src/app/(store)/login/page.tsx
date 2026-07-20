@@ -105,17 +105,12 @@ function LoginForm() {
               >
                 Password
               </label>
-              <button
-                type="button"
-                onClick={() =>
-                  toast.info('Password reset link sent', {
-                    description: 'Check your inbox for further steps.',
-                  })
-                }
+              <Link
+                href="/forgot-password"
                 className="text-xs text-brand transition-colors hover:text-foreground"
               >
                 Forgot password?
-              </button>
+              </Link>
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-border px-3 focus-within:border-foreground/60">
               <Lock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
