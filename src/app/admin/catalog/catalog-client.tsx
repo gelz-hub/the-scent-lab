@@ -88,7 +88,12 @@ function ImageField({
 }
 
 function slugify(name: string) {
-  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/['’]/g, '') // strip apostrophes so "Men's" -> "mens", not "men-s"
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
 }
 
 function emptyDraft(): Record<string, string> {

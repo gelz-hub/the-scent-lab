@@ -19,7 +19,7 @@ export function CategorySection({ categories }: { categories: CatalogCategory[] 
           {categories.map((cat, i) => (
             <CategoryCard
               key={cat.slug}
-              href={`/${cat.slug.toLowerCase()}`}
+              href={`/categories/${cat.slug}`}
               name={cat.name}
               description={cat.description}
               image={cat.image}
