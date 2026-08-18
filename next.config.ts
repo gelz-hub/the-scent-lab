@@ -45,6 +45,13 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   /* config options here */
+  // firebase-admin's package.json "exports" map splits ./app, ./auth, and
+  // ./messaging into separate require/import conditions. Next's standalone
+  // output file-tracer mis-resolves the ESM entry for a require() call
+  // unless the package is excluded from bundling/tracing and instead
+  // required directly from node_modules at runtime.
+  // https://nextjs.org/docs/app/api-reference/next-config-js/serverExternalPackages
+  serverExternalPackages: ["firebase-admin"],
   typescript: {
     ignoreBuildErrors: true,
   },
