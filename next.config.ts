@@ -45,11 +45,14 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   /* config options here */
-  // firebase-admin's package.json "exports" map splits ./app, ./auth, and
-  // ./messaging into separate require/import conditions. Next's standalone
-  // output file-tracer mis-resolves the ESM entry for a require() call
-  // unless the package is excluded from bundling/tracing and instead
-  // required directly from node_modules at runtime.
+  // Turbopack externalizes firebase-admin for Node.js route handlers by
+  // its own default policy regardless of this setting (verified: removing
+  // it produces byte-identical [externals]_firebase-admin_* chunks). It's
+  // kept because it's the documented Next.js mechanism for this exact
+  // situation, but it is NOT what controls whether firebase-admin is
+  // externalized here — see src/lib/firebase/admin-auth.ts for the actual
+  // runtime failure mode (Turbopack's externalImport() helper resolving a
+  // build-hashed alias folder, e.g. node_modules/firebase-admin-<hash>).
   // https://nextjs.org/docs/app/api-reference/next-config-js/serverExternalPackages
   serverExternalPackages: ["firebase-admin"],
   typescript: {
