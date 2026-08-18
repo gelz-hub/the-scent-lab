@@ -6,20 +6,6 @@ import { EmptyState } from '@/components/site/empty-state'
 import { getCategory, getCategories, getProducts, getBrands, getCollections } from '@/lib/catalog'
 import type { Gender } from '@/lib/data'
 
-// Admin-managed Category records (e.g. "Men's Fragrances") are a
-// merchandising label, not the same taxonomy as Product.category (which
-// is actually the fragrance *format* — Perfume/EDT/etc). They map onto
-// Product.gender instead — match on that first ("women" is checked before
-// the bare "men" substring it contains), falling back to a literal
-// category-field match for any category name that isn't gender-based.
-function matchGender(categoryName: string): Gender | null {
-  const normalized = categoryName.toLowerCase()
-  if (normalized.includes('women')) return 'Women'
-  if (normalized.includes('unisex')) return 'Unisex'
-  if (normalized.includes('men')) return 'Men'
-  return null
-}
-
 interface PageProps {
   params: Promise<{ slug: string }>
 }
@@ -52,10 +38,18 @@ export default async function CategoryDetailPage({ params }: PageProps) {
   // through to the app's not-found page rather than crashing.
   if (!category) notFound()
 
-  const gender = matchGender(category.name)
-  const categoryProducts = gender
-    ? allProducts.filter((p) => p.gender === gender)
-    : allProducts.filter((p) => p.category.toLowerCase() === category.name.toLowerCase())
+  // The admin product form saves the selected Category's *name* directly
+  // into Product.gender (see product-form-dialog.tsx) — it's a plain
+  // String column, not the "Women"|"Men"|"Unisex" enum the Gender type
+  // implies. So the real match is a literal, case-insensitive comparison
+  // against the category name itself. Product.category is a separate
+  // field (fragrance format — Perfume/EDT/etc), kept as a fallback for
+  // any category that isn't gender-named.
+  const genderMatches = allProducts.filter((p) => p.gender.toLowerCase() === category.name.toLowerCase())
+  const categoryProducts =
+    genderMatches.length > 0
+      ? genderMatches
+      : allProducts.filter((p) => p.category.toLowerCase() === category.name.toLowerCase())
 
   return (
     <div>
