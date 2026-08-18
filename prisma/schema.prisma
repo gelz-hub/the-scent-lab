@@ -24,9 +24,8 @@ enum Role {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  // Credentials now live in Firebase Auth (see src/lib/firebase/admin-auth.ts);
-  // this id is always kept identical to the user's Firebase uid. Column kept
-  // (nullable) only for pre-migration history — no longer written to.
+  // bcrypt hash — see src/lib/auth/password.ts. Nullable only for legacy
+  // rows created during the (now-removed) Firebase Auth era.
   passwordHash String?
   name         String?
   role         Role     @default(CUSTOMER)
@@ -61,6 +60,21 @@ model User {
   updatedSettings      SystemSetting[]
   scheduledReports     ScheduledReport[]
   passwordResetTokens  PasswordResetToken[]
+  sessions             Session[]
+}
+
+// Session cookie holds the raw token; only its hash is stored here so a DB
+// read alone can't yield a usable session. See src/lib/auth/session.ts.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Deprecated — password reset is now handled by Firebase Auth

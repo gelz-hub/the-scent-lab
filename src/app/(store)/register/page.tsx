@@ -2,14 +2,11 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { signInWithEmail } from '@/lib/firebase/auth-client'
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/site/breadcrumb'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -43,12 +40,12 @@ export default function RegisterPage() {
         toast.error(data.error || 'Could not create account')
         return
       }
-      await signInWithEmail(email, password)
       toast.success('Account created', {
         description: 'Welcome to The Scent Lab.',
       })
-      router.push('/account')
-      router.refresh()
+      // Full navigation (not router.push) so SessionProvider remounts and
+      // picks up the freshly set session cookie.
+      window.location.href = '/account'
     } finally {
       setLoading(false)
     }

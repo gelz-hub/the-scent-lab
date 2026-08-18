@@ -2,8 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { signInWithEmail } from '@/lib/firebase/auth-client'
+import { useSearchParams } from 'next/navigation'
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/site/breadcrumb'
@@ -17,7 +16,6 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -32,10 +30,16 @@ function LoginForm() {
     }
     setLoading(true)
     try {
-      await signInWithEmail(email, password)
-    } catch {
-      toast.error('Invalid email or password')
-      return
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || 'Invalid email or password')
+        return
+      }
     } finally {
       setLoading(false)
     }
@@ -44,8 +48,9 @@ function LoginForm() {
       description: 'Welcome back to The Scent Lab.',
     })
     const callbackUrl = searchParams.get('callbackUrl')
-    router.push(callbackUrl || '/account')
-    router.refresh()
+    // Full navigation (not router.push) so SessionProvider remounts and
+    // picks up the freshly set session cookie.
+    window.location.href = callbackUrl || '/account'
   }
 
   return (

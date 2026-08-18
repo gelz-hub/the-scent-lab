@@ -1,63 +1,48 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { jwtVerify, importX509, decodeProtectedHeader } from 'jose'
+import { createHash } from 'crypto'
+import { db } from '@/lib/db'
 import { isAdminRole } from '@/lib/rbac/permissions'
+
+export const runtime = 'nodejs'
 
 const SESSION_COOKIE_NAME = 'session'
 
-// Google does NOT publish a JWKS for Firebase session cookies — only a
-// { kid: pemCertificate } map of X.509 certs (a different signing key than
-// ID tokens, which do have a JWKS). So verification here means: fetch that
-// cert map, pick the cert matching the cookie's `kid` header, and import it
-// as a public key for jose to verify against. Cached for 1 hour (Google's
-// own Cache-Control on this endpoint) so most requests don't refetch.
-const SESSION_COOKIE_CERTS_URL = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys'
-
-let certsCache: { certs: Record<string, string>; fetchedAt: number } | null = null
-const CERTS_TTL_MS = 60 * 60 * 1000
-
-async function getCerts(): Promise<Record<string, string>> {
-  if (certsCache && Date.now() - certsCache.fetchedAt < CERTS_TTL_MS) return certsCache.certs
-  const res = await fetch(SESSION_COOKIE_CERTS_URL)
-  const certs = (await res.json()) as Record<string, string>
-  certsCache = { certs, fetchedAt: Date.now() }
-  return certs
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
 }
 
 async function readRole(req: NextRequest): Promise<{ authenticated: boolean; role?: string }> {
-  const sessionCookie = req.cookies.get(SESSION_COOKIE_NAME)?.value
-  if (!sessionCookie) return { authenticated: false }
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value
+  if (!token) return { authenticated: false }
 
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID
-  try {
-    const { kid } = decodeProtectedHeader(sessionCookie)
-    const certs = await getCerts()
-    const pem = kid ? certs[kid] : undefined
-    if (!pem) return { authenticated: false }
+  const session = await db.session.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { expiresAt: true, user: { select: { role: true } } },
+  })
+  if (!session || session.expiresAt < new Date()) return { authenticated: false }
 
-    const publicKey = await importX509(pem, 'RS256')
-    const { payload } = await jwtVerify(sessionCookie, publicKey, {
-      issuer: `https://session.firebase.google.com/${projectId}`,
-      audience: projectId,
-    })
-    return { authenticated: true, role: payload.role as string | undefined }
-  } catch {
-    return { authenticated: false }
-  }
+  return { authenticated: true, role: session.user.role }
 }
 
 // Manual token check because this middleware now covers two independent
 // concerns with different scopes: maintenance mode applies site-wide,
 // while the "must be signed in" gate only applies to /admin and /account.
+// The session lookup only runs when one of those gates could actually
+// apply — most requests (product pages, cart, checkout, API routes) skip
+// it entirely rather than paying a DB round trip on every request.
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  const maintenanceOn = process.env.MAINTENANCE_MODE === 'true'
+  const needsAdminCheck = pathname.startsWith('/admin') || (maintenanceOn && pathname !== '/maintenance' && !pathname.startsWith('/api'))
+  const needsAuthCheck = pathname.startsWith('/account')
+
+  if (!needsAdminCheck && !needsAuthCheck) {
+    return NextResponse.next()
+  }
+
   const { authenticated, role } = await readRole(req)
 
-  // Maintenance mode: site-wide read-only banner page for everyone except
-  // admin-role staff (who need to keep working) and the health check (so
-  // uptime monitors don't report a false outage during planned maintenance).
-  // Toggled by env var only — no DB/admin-UI dependency, so it still works
-  // if the database itself is what's down.
-  const maintenanceOn = process.env.MAINTENANCE_MODE === 'true'
   // API routes are left alone even in maintenance mode — rewriting them to
   // an HTML page would break any in-flight client fetch/webhook delivery
   // (e.g. the payment provider's callback) rather than gracefully degrading.
