@@ -25,6 +25,13 @@ async function getFirebaseAdminApp(): Promise<App | null> {
     return app
   }
 
+  console.log('[FIREBASE_ADMIN]', {
+    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+    clientEmailPresent: !!process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+    privateKeyPresent: !!process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+    privateKeyLength: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.length,
+  })
+
   app = initializeApp({
     credential: cert({
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,

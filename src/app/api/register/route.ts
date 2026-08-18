@@ -12,6 +12,7 @@ const registerSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  console.log('[REGISTER] request received')
   // 5 accounts / hour / IP — registration abuse (bulk fake accounts) is the
   // threat here, not brute force, so the window is longer and the limit
   // lower than login's.
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Please check your details and try again.' }, { status: 400 })
   }
+  console.log('[REGISTER] validation passed')
 
   const { name, email, password } = parsed.data
 
@@ -36,16 +38,33 @@ export async function POST(req: Request) {
   // Prisma row is created first so its auto-generated cuid can be reused as
   // the Firebase uid — see src/lib/auth/session.ts. Roll back on Firebase
   // failure so we never end up with an account that can't sign in.
+  console.log('[REGISTER] creating database user')
   const user = await db.user.create({
     data: { name, email, role: 'CUSTOMER' },
     select: { id: true, email: true, name: true },
   })
+  console.log('[REGISTER] database user created')
 
   try {
+    console.log('[REGISTER] creating firebase user')
     const auth = await getAdminAuth()
-    await auth.createUser({ uid: user.id, email: user.email, password, displayName: name })
+
+    let firebaseUser
+    try {
+      firebaseUser = await auth.createUser({ uid: user.id, email: user.email, password, displayName: name })
+    } catch (error) {
+      const e = error as { code?: string; message?: string; stack?: string }
+      console.error('[FIREBASE_CREATE_USER_ERROR]', { code: e?.code, message: e?.message, stack: e?.stack })
+      throw error
+    }
+    console.log('[REGISTER] firebase user created', firebaseUser.uid)
+
+    console.log('[REGISTER] setting custom claims')
     await auth.setCustomUserClaims(user.id, { role: 'CUSTOMER' })
+    console.log('[REGISTER] custom claims set')
   } catch (err) {
+    const e = err as { name?: string; code?: string; message?: string; stack?: string }
+    console.error('[REGISTER_ERROR]', { name: e?.name, code: e?.code, message: e?.message, stack: e?.stack })
     await db.user.delete({ where: { id: user.id } })
     const message = err instanceof Error && 'code' in err && (err as { code?: string }).code === 'auth/email-already-exists'
       ? 'An account with this email already exists.'
@@ -53,5 +72,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 })
   }
 
+  console.log('[REGISTER] success')
   return NextResponse.json({ user }, { status: 201 })
 }
