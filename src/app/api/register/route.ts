@@ -42,8 +42,9 @@ export async function POST(req: Request) {
   })
 
   try {
-    await getAdminAuth().createUser({ uid: user.id, email: user.email, password, displayName: name })
-    await getAdminAuth().setCustomUserClaims(user.id, { role: 'CUSTOMER' })
+    const auth = await getAdminAuth()
+    await auth.createUser({ uid: user.id, email: user.email, password, displayName: name })
+    await auth.setCustomUserClaims(user.id, { role: 'CUSTOMER' })
   } catch (err) {
     await db.user.delete({ where: { id: user.id } })
     const message = err instanceof Error && 'code' in err && (err as { code?: string }).code === 'auth/email-already-exists'

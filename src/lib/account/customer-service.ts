@@ -73,5 +73,5 @@ export async function changePassword(userId: string, currentPassword: string, ne
   )
   if (!verifyRes.ok) throw new InvalidCurrentPasswordError()
 
-  await getAdminAuth().updateUser(userId, { password: newPassword })
+  await (await getAdminAuth()).updateUser(userId, { password: newPassword })
 }

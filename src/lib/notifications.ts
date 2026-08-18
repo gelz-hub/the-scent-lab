@@ -12,7 +12,7 @@ interface PushPayload {
 async function sendToTokens(tokens: string[], payload: PushPayload) {
   if (!isFirebaseAdminConfigured || tokens.length === 0) return
 
-  const messaging = getAdminMessaging()
+  const messaging = await getAdminMessaging()
   if (!messaging) return
 
   const res = await messaging.sendEachForMulticast({

@@ -1,5 +1,6 @@
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app'
-import { getMessaging } from 'firebase-admin/messaging'
+// See src/lib/firebase/admin-auth.ts for why every firebase-admin entry
+// point is dynamically imported instead of statically imported here.
+import type { App } from 'firebase-admin/app'
 
 export const isFirebaseAdminConfigured = Boolean(
   process.env.FIREBASE_ADMIN_PROJECT_ID &&
@@ -9,9 +10,11 @@ export const isFirebaseAdminConfigured = Boolean(
 
 let app: App | null = null
 
-function getFirebaseAdminApp(): App | null {
+async function getFirebaseAdminApp(): Promise<App | null> {
   if (!isFirebaseAdminConfigured) return null
   if (app) return app
+
+  const { initializeApp, getApps, cert } = await import('firebase-admin/app')
   if (getApps().length) {
     app = getApps()[0]
     return app
@@ -28,8 +31,9 @@ function getFirebaseAdminApp(): App | null {
   return app
 }
 
-export function getAdminMessaging() {
-  const adminApp = getFirebaseAdminApp()
+export async function getAdminMessaging() {
+  const adminApp = await getFirebaseAdminApp()
   if (!adminApp) return null
+  const { getMessaging } = await import('firebase-admin/messaging')
   return getMessaging(adminApp)
 }

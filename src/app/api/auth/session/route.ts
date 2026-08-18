@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   let decoded
   try {
-    decoded = await getAdminAuth().verifyIdToken(idToken)
+    decoded = await (await getAdminAuth()).verifyIdToken(idToken)
   } catch {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
   }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, email: true, name: true, role: true },
     })
-    await getAdminAuth().setCustomUserClaims(decoded.uid, { role: user.role })
+    await (await getAdminAuth()).setCustomUserClaims(decoded.uid, { role: user.role })
   }
 
   const sessionCookie = await createSessionCookie(idToken)
@@ -82,8 +82,9 @@ export async function DELETE(req: NextRequest) {
 
   if (sessionCookie) {
     try {
-      const decoded = await getAdminAuth().verifySessionCookie(sessionCookie)
-      await getAdminAuth().revokeRefreshTokens(decoded.uid)
+      const auth = await getAdminAuth()
+      const decoded = await auth.verifySessionCookie(sessionCookie)
+      await auth.revokeRefreshTokens(decoded.uid)
       await recordAudit({ userId: decoded.uid, action: 'LOGOUT', resource: 'Session' })
     } catch {
       // Cookie already invalid/expired — nothing to revoke or log.

@@ -37,13 +37,14 @@ export async function createStaffAccount(input: CreateStaffInput) {
   })
 
   try {
-    await getAdminAuth().createUser({
+    const auth = await getAdminAuth()
+    await auth.createUser({
       uid: user.id,
       email: user.email,
       password: input.password,
       displayName: user.name ?? undefined,
     })
-    await getAdminAuth().setCustomUserClaims(user.id, { role: user.role })
+    await auth.setCustomUserClaims(user.id, { role: user.role })
   } catch (err) {
     await db.user.delete({ where: { id: user.id } })
     throw err
@@ -58,13 +59,13 @@ export async function changeStaffRole(userId: string, role: AdminRole) {
     data: { role },
     select: { id: true, name: true, email: true, role: true },
   })
-  await getAdminAuth().setCustomUserClaims(userId, { role })
+  await (await getAdminAuth()).setCustomUserClaims(userId, { role })
   return user
 }
 
 /** Revokes admin access — demotes back to CUSTOMER rather than deleting the account (preserves their order/audit history intact). */
 export async function revokeStaffAccess(userId: string) {
   const user = await db.user.update({ where: { id: userId }, data: { role: 'CUSTOMER' }, select: { id: true, role: true } })
-  await getAdminAuth().setCustomUserClaims(userId, { role: 'CUSTOMER' })
+  await (await getAdminAuth()).setCustomUserClaims(userId, { role: 'CUSTOMER' })
   return user
 }

@@ -38,7 +38,8 @@ export async function POST(req: Request) {
   // Firebase mints the link pointed at its own hosted handler; we only want
   // the oobCode out of it so our own branded /reset-password page (not
   // Firebase's default UI) can call confirmPasswordReset client-side.
-  const firebaseLink = await getAdminAuth().generatePasswordResetLink(email, {
+  const auth = await getAdminAuth()
+  const firebaseLink = await auth.generatePasswordResetLink(email, {
     url: `${appUrl}/reset-password`,
   })
   const oobCode = new URL(firebaseLink).searchParams.get('oobCode')

@@ -16,7 +16,7 @@ import { getAdminAuth } from '../src/lib/firebase/admin-auth'
 const BATCH_SIZE = 1000
 
 async function main() {
-  const auth = getAdminAuth()
+  const auth = await getAdminAuth()
   const users = await db.user.findMany({
     where: { passwordHash: { not: null } },
     select: { id: true, email: true, name: true, role: true, passwordHash: true },
